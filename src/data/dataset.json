@@ -1,0 +1,89 @@
+{
+  "programs": [
+    { "id": "p1", "name": "Sentinel ISR Drone" },
+    { "id": "p2", "name": "Aegis Communications Node" },
+    { "id": "p3", "name": "Falcon Precision Munition" }
+  ],
+  "components": [
+    { "id": "c1", "name": "Inertial Navigation Unit", "criticality": "HIGH" },
+    { "id": "c2", "name": "Secure RF Modem", "criticality": "HIGH" },
+    { "id": "c3", "name": "Thermal Imaging Core", "criticality": "MED" },
+    { "id": "c4", "name": "Power Regulation Module", "criticality": "MED" },
+    { "id": "c5", "name": "Flight Control MCU", "criticality": "HIGH" },
+    { "id": "c6", "name": "Composite Airframe Panel", "criticality": "LOW" }
+  ],
+  "suppliers": [
+    {
+      "id": "s1",
+      "name": "Arcturus Avionics",
+      "location": "Huntsville, AL",
+      "riskScore": 42,
+      "isActive": true
+    },
+    {
+      "id": "s2",
+      "name": "Blueforge Systems",
+      "location": "Phoenix, AZ",
+      "riskScore": 31,
+      "isActive": true
+    },
+    {
+      "id": "s3",
+      "name": "Cobalt Dynamics",
+      "location": "Dayton, OH",
+      "riskScore": 58,
+      "isActive": true
+    },
+    {
+      "id": "s4",
+      "name": "Delta Relay Works",
+      "location": "San Diego, CA",
+      "riskScore": 27,
+      "isActive": false
+    },
+    {
+      "id": "s5",
+      "name": "Everline Microfab",
+      "location": "Austin, TX",
+      "riskScore": 46,
+      "isActive": true
+    },
+    {
+      "id": "s6",
+      "name": "Frontier Composites",
+      "location": "Wichita, KS",
+      "riskScore": 22,
+      "isActive": true
+    }
+  ],
+  "programComponentLinks": [
+    { "programId": "p1", "componentId": "c1" },
+    { "programId": "p1", "componentId": "c3" },
+    { "programId": "p1", "componentId": "c5" },
+    { "programId": "p1", "componentId": "c6" },
+
+    { "programId": "p2", "componentId": "c1" },
+    { "programId": "p2", "componentId": "c2" },
+    { "programId": "p2", "componentId": "c4" },
+
+    { "programId": "p3", "componentId": "c2" },
+    { "programId": "p3", "componentId": "c3" },
+    { "programId": "p3", "componentId": "c5" },
+    { "programId": "p3", "componentId": "c6" }
+  ],
+  "componentSupplierLinks": [
+    { "componentId": "c1", "supplierId": "s1" },
+    { "componentId": "c1", "supplierId": "s2" },
+
+    { "componentId": "c2", "supplierId": "s3" },
+
+    { "componentId": "c3", "supplierId": "s2" },
+    { "componentId": "c3", "supplierId": "s4" },
+
+    { "componentId": "c4", "supplierId": "s5" },
+
+    { "componentId": "c5", "supplierId": "s1" },
+
+    { "componentId": "c6", "supplierId": "s6" }
+  ]
+}

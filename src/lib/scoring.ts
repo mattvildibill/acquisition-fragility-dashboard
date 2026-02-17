@@ -1,0 +1,413 @@
+import type {
+  Component,
+  ComponentStatus,
+  Dataset,
+  PortfolioSummary,
+  Program,
+  ProgramBreakdown,
+  ProgramDriver,
+  Supplier,
+  SupplierActiveMap
+} from '../data/types';
+
+export const PROGRAM_AT_RISK_THRESHOLD = 60;
+
+const SPOF_PENALTY = 45;
+const NO_SUPPLIER_PENALTY = 90;
+
+const criticalityWeight: Record<Component['criticality'], number> = {
+  LOW: 1,
+  MED: 1.5,
+  HIGH: 2
+};
+
+export interface ComponentStatusResult {
+  status: ComponentStatus;
+  component: Component;
+  activeSuppliers: Supplier[];
+  inactiveSuppliers: Supplier[];
+  allSuppliers: Supplier[];
+}
+
+function getSupplierActiveState(supplierId: string, supplierActiveMap: SupplierActiveMap, data: Dataset): boolean {
+  if (supplierId in supplierActiveMap) {
+    return supplierActiveMap[supplierId];
+  }
+  const supplier = data.suppliers.find((item) => item.id === supplierId);
+  return supplier?.isActive ?? false;
+}
+
+function getComponentById(componentId: string, data: Dataset): Component {
+  const component = data.components.find((item) => item.id === componentId);
+  if (!component) {
+    throw new Error(`Unknown component id: ${componentId}`);
+  }
+  return component;
+}
+
+function getProgramById(programId: string, data: Dataset): Program {
+  const program = data.programs.find((item) => item.id === programId);
+  if (!program) {
+    throw new Error(`Unknown program id: ${programId}`);
+  }
+  return program;
+}
+
+export function getProgramComponents(programId: string, data: Dataset): Component[] {
+  const ids = data.programComponentLinks
+    .filter((item) => item.programId === programId)
+    .map((item) => item.componentId);
+  return data.components.filter((item) => ids.includes(item.id));
+}
+
+export function getComponentSuppliers(componentId: string, data: Dataset): Supplier[] {
+  const ids = data.componentSupplierLinks
+    .filter((item) => item.componentId === componentId)
+    .map((item) => item.supplierId);
+  return data.suppliers.filter((item) => ids.includes(item.id));
+}
+
+export function computeComponentStatus(
+  componentId: string,
+  supplierActiveMap: SupplierActiveMap,
+  data: Dataset
+): ComponentStatusResult {
+  const component = getComponentById(componentId, data);
+  const allSuppliers = getComponentSuppliers(componentId, data);
+  const activeSuppliers = allSuppliers.filter((supplier) =>
+    getSupplierActiveState(supplier.id, supplierActiveMap, data)
+  );
+  const inactiveSuppliers = allSuppliers.filter((supplier) =>
+    !getSupplierActiveState(supplier.id, supplierActiveMap, data)
+  );
+
+  let status: ComponentStatus = 'HEALTHY';
+  if (activeSuppliers.length === 1) {
+    status = 'SPOF';
+  }
+  if (activeSuppliers.length === 0) {
+    status = 'NO_SUPPLIER';
+  }
+
+  return {
+    status,
+    component,
+    activeSuppliers,
+    inactiveSuppliers,
+    allSuppliers
+  };
+}
+
+function getPenalty(component: Component, status: ComponentStatus): number {
+  const weight = criticalityWeight[component.criticality];
+  if (status === 'SPOF') {
+    return SPOF_PENALTY * weight;
+  }
+  if (status === 'NO_SUPPLIER') {
+    return NO_SUPPLIER_PENALTY * weight;
+  }
+  return 0;
+}
+
+function getRecommendedNextStep(status: ComponentStatus, inactiveSuppliers: Supplier[]): string {
+  if (status === 'NO_SUPPLIER') {
+    if (inactiveSuppliers.length > 0) {
+      return `Identify/qualify alternate supplier; activate/qualify inactive supplier: ${inactiveSuppliers[0].name}`;
+    }
+    return 'Identify/qualify alternate supplier; component currently unfulfilled';
+  }
+
+  if (status === 'SPOF') {
+    if (inactiveSuppliers.length > 0) {
+      return `Add second active supplier to reduce SPOF; activate/qualify inactive supplier: ${inactiveSuppliers[0].name}`;
+    }
+    return 'Add second active supplier to reduce SPOF';
+  }
+
+  return 'Monitor supplier resiliency posture';
+}
+
+export function computeProgramBreakdown(
+  programId: string,
+  supplierActiveMap: SupplierActiveMap,
+  data: Dataset
+): ProgramBreakdown {
+  const components = getProgramComponents(programId, data);
+
+  if (components.length === 0) {
+    return {
+      programId,
+      score: 100,
+      resilientCoveragePct: 100,
+      healthyCount: 0,
+      spofCount: 0,
+      noSupplierCount: 0,
+      totalPenalty: 0,
+      totalWeight: 0,
+      topDriverComponent: 'None',
+      drivers: [],
+      explanation: 'No components mapped to this program yet; score defaults to 100.'
+    };
+  }
+
+  let healthyCount = 0;
+  let spofCount = 0;
+  let noSupplierCount = 0;
+
+  const totalWeight = components.reduce((sum, component) => {
+    return sum + criticalityWeight[component.criticality];
+  }, 0);
+
+  const drivers: ProgramDriver[] = components.map((component) => {
+    const componentStatus = computeComponentStatus(component.id, supplierActiveMap, data);
+    const penalty = getPenalty(component, componentStatus.status);
+
+    if (componentStatus.status === 'HEALTHY') {
+      healthyCount += 1;
+    }
+    if (componentStatus.status === 'SPOF') {
+      spofCount += 1;
+    }
+    if (componentStatus.status === 'NO_SUPPLIER') {
+      noSupplierCount += 1;
+    }
+
+    return {
+      componentId: component.id,
+      componentName: component.name,
+      criticality: component.criticality,
+      status: componentStatus.status,
+      penalty,
+      recommendedNextStep: getRecommendedNextStep(componentStatus.status, componentStatus.inactiveSuppliers)
+    };
+  });
+
+  const totalPenalty = drivers.reduce((sum, driver) => sum + driver.penalty, 0);
+  const normalizedPenalty = totalWeight === 0 ? 0 : totalPenalty / totalWeight;
+  const score = Math.max(0, Math.round(100 - normalizedPenalty));
+  const resilientCoveragePct = Math.round((healthyCount / components.length) * 100);
+
+  const sortedDrivers = [...drivers].sort((a, b) => b.penalty - a.penalty || a.componentName.localeCompare(b.componentName));
+  const topDriver = sortedDrivers.find((driver) => driver.penalty > 0);
+  const topDriverComponent = topDriver?.componentName ?? 'None';
+
+  const explanation =
+    'Score starts at 100 and subtracts weighted fragility penalties: SPOF=45 and No Supplier=90, scaled by criticality (LOW=1, MED=1.5, HIGH=2).';
+
+  return {
+    programId,
+    score,
+    resilientCoveragePct,
+    healthyCount,
+    spofCount,
+    noSupplierCount,
+    totalPenalty,
+    totalWeight,
+    topDriverComponent,
+    drivers: sortedDrivers,
+    explanation
+  };
+}
+
+export function computeProgramScore(programId: string, supplierActiveMap: SupplierActiveMap, data: Dataset): number {
+  return computeProgramBreakdown(programId, supplierActiveMap, data).score;
+}
+
+export function getComponentMitigation(
+  componentId: string,
+  supplierActiveMap: SupplierActiveMap,
+  data: Dataset
+): string {
+  const details = computeComponentStatus(componentId, supplierActiveMap, data);
+  return getRecommendedNextStep(details.status, details.inactiveSuppliers);
+}
+
+export function getImpactedPrograms(componentId: string, data: Dataset): Program[] {
+  const programIds = data.programComponentLinks
+    .filter((item) => item.componentId === componentId)
+    .map((item) => item.programId);
+  return data.programs.filter((item) => programIds.includes(item.id));
+}
+
+function getProgramsImpactedIfSupplierFails(
+  supplierId: string,
+  supplierActiveMap: SupplierActiveMap,
+  data: Dataset
+): Program[] {
+  const currentlyActive = getSupplierActiveState(supplierId, supplierActiveMap, data);
+  if (!currentlyActive) {
+    return [];
+  }
+
+  const simulatedMap: SupplierActiveMap = {
+    ...supplierActiveMap,
+    [supplierId]: false
+  };
+
+  return data.programs.filter((program) => {
+    const components = getProgramComponents(program.id, data);
+    return components.some((component) => {
+      const currentStatus = computeComponentStatus(component.id, supplierActiveMap, data).status;
+      const simulatedStatus = computeComponentStatus(component.id, simulatedMap, data).status;
+      return currentStatus !== 'NO_SUPPLIER' && simulatedStatus === 'NO_SUPPLIER';
+    });
+  });
+}
+
+function getSpofComponentsForSupplier(
+  supplierId: string,
+  supplierActiveMap: SupplierActiveMap,
+  data: Dataset
+): string[] {
+  return data.components
+    .filter((component) => {
+      const details = computeComponentStatus(component.id, supplierActiveMap, data);
+      return details.status === 'SPOF' && details.activeSuppliers.some((supplier) => supplier.id === supplierId);
+    })
+    .map((component) => component.name);
+}
+
+function computeTopCriticalSupplier(
+  supplierActiveMap: SupplierActiveMap,
+  data: Dataset
+): PortfolioSummary['topCriticalSupplier'] {
+  let top: PortfolioSummary['topCriticalSupplier'] = null;
+
+  data.suppliers.forEach((supplier) => {
+    const spofComponents = getSpofComponentsForSupplier(supplier.id, supplierActiveMap, data);
+    const impactedPrograms = getProgramsImpactedIfSupplierFails(supplier.id, supplierActiveMap, data);
+
+    // Simple weekend-friendly heuristic: prioritize potential blast radius (programs impacted)
+    // and break ties with existing SPOF concentration owned by the supplier.
+    const score = impactedPrograms.length * 2 + spofComponents.length;
+
+    if (score > 0 && (!top || score > top.score)) {
+      top = {
+        supplierId: supplier.id,
+        supplierName: supplier.name,
+        score,
+        reason: `${impactedPrograms.length} program(s) impacted if fails; ${spofComponents.length} SPOF component(s)`
+      };
+    }
+  });
+
+  return top;
+}
+
+export function computePortfolioSummary(
+  supplierActiveMap: SupplierActiveMap,
+  data: Dataset
+): PortfolioSummary {
+  const breakdowns = data.programs.map((program) => ({
+    program,
+    breakdown: computeProgramBreakdown(program.id, supplierActiveMap, data)
+  }));
+
+  const averageHealthScore = Math.round(
+    breakdowns.reduce((sum, item) => sum + item.breakdown.score, 0) / (breakdowns.length || 1)
+  );
+
+  const programsAtRisk = breakdowns.filter((item) => item.breakdown.score < PROGRAM_AT_RISK_THRESHOLD).length;
+
+  const componentStatuses = data.components.map((component) => ({
+    component,
+    details: computeComponentStatus(component.id, supplierActiveMap, data)
+  }));
+
+  const totalNoSupplierComponents = componentStatuses.filter((item) => item.details.status === 'NO_SUPPLIER').length;
+  const totalSpofComponents = componentStatuses.filter((item) => item.details.status === 'SPOF').length;
+
+  const programRows = breakdowns.map((item) => ({
+    programId: item.program.id,
+    programName: item.program.name,
+    score: item.breakdown.score,
+    spofCount: item.breakdown.spofCount,
+    noSupplierCount: item.breakdown.noSupplierCount,
+    topDriverComponent: item.breakdown.topDriverComponent
+  }));
+
+  const criticalNodes = data.suppliers.map((supplier) => ({
+    supplierId: supplier.id,
+    supplierName: supplier.name,
+    spofComponents: getSpofComponentsForSupplier(supplier.id, supplierActiveMap, data),
+    affectedProgramsIfFails: getProgramsImpactedIfSupplierFails(supplier.id, supplierActiveMap, data).map(
+      (program) => program.name
+    )
+  }));
+
+  criticalNodes.sort((a, b) => {
+    return (
+      b.affectedProgramsIfFails.length - a.affectedProgramsIfFails.length ||
+      b.spofComponents.length - a.spofComponents.length ||
+      a.supplierName.localeCompare(b.supplierName)
+    );
+  });
+
+  return {
+    averageHealthScore,
+    programsAtRisk,
+    totalNoSupplierComponents,
+    totalSpofComponents,
+    topCriticalSupplier: computeTopCriticalSupplier(supplierActiveMap, data),
+    programRows,
+    criticalNodes
+  };
+}
+
+export function createSupplierActiveMap(data: Dataset): SupplierActiveMap {
+  return data.suppliers.reduce<SupplierActiveMap>((acc, supplier) => {
+    acc[supplier.id] = supplier.isActive;
+    return acc;
+  }, {});
+}
+
+export function getSupplierImpactSummary(
+  supplierId: string,
+  supplierActiveMap: SupplierActiveMap,
+  data: Dataset
+): { impactedPrograms: number; impactedComponents: number } {
+  const isActive = getSupplierActiveState(supplierId, supplierActiveMap, data);
+  if (!isActive) {
+    return {
+      impactedPrograms: 0,
+      impactedComponents: 0
+    };
+  }
+
+  const componentIds = data.componentSupplierLinks
+    .filter((item) => item.supplierId === supplierId)
+    .filter((item) => computeComponentStatus(item.componentId, supplierActiveMap, data).activeSuppliers.some((s) => s.id === supplierId))
+    .map((item) => item.componentId);
+
+  const uniqueComponentIds = [...new Set(componentIds)];
+
+  const programIds = data.programComponentLinks
+    .filter((item) => uniqueComponentIds.includes(item.componentId))
+    .map((item) => item.programId);
+
+  return {
+    impactedPrograms: new Set(programIds).size,
+    impactedComponents: uniqueComponentIds.length
+  };
+}
+
+export function formatStatusLabel(status: ComponentStatus): string {
+  if (status === 'NO_SUPPLIER') {
+    return 'No Supplier';
+  }
+  if (status === 'SPOF') {
+    return 'SPOF';
+  }
+  return 'Healthy';
+}
+
+export function formatScenarioTimestamp(value: string | null): string {
+  if (!value) {
+    return 'Baseline';
+  }
+  return new Date(value).toLocaleString();
+}
+
+export function getProgramName(programId: string, data: Dataset): string {
+  return getProgramById(programId, data).name;
+}

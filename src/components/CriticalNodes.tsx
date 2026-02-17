@@ -1,0 +1,77 @@
+import { useMemo, useState } from 'react';
+import type { CriticalSupplierNode, Dataset } from '../data/types';
+
+interface CriticalNodesProps {
+  nodes: CriticalSupplierNode[];
+  data: Dataset;
+}
+
+export function CriticalNodes({ nodes, data }: CriticalNodesProps): JSX.Element {
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>(nodes[0]?.supplierId ?? '');
+
+  const selectedNode = useMemo(() => {
+    return nodes.find((item) => item.supplierId === selectedSupplierId) ?? nodes[0] ?? null;
+  }, [nodes, selectedSupplierId]);
+
+  return (
+    <section className="card">
+      <h2>Critical Nodes</h2>
+      <p className="muted">Suppliers ranked by potential program impact if they fail.</p>
+      <div className="table-scroll">
+        <table className="data-table clickable-rows">
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th># SPOF Components</th>
+              <th># Programs Impacted If Fails</th>
+            </tr>
+          </thead>
+          <tbody>
+            {nodes.map((node) => (
+              <tr
+                key={node.supplierId}
+                className={selectedNode?.supplierId === node.supplierId ? 'selected-row' : ''}
+                onClick={() => setSelectedSupplierId(node.supplierId)}
+              >
+                <td>{node.supplierName}</td>
+                <td>{node.spofComponents.length}</td>
+                <td>{node.affectedProgramsIfFails.length}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedNode ? (
+        <div className="critical-detail">
+          <h3>{selectedNode.supplierName}</h3>
+          <p className="muted">
+            {data.suppliers.find((supplier) => supplier.id === selectedNode.supplierId)?.location}
+          </p>
+          <div className="detail-columns">
+            <div>
+              <h4>SPOF Components</h4>
+              <ul className="simple-list">
+                {selectedNode.spofComponents.length === 0 ? (
+                  <li>None</li>
+                ) : (
+                  selectedNode.spofComponents.map((name) => <li key={name}>{name}</li>)
+                )}
+              </ul>
+            </div>
+            <div>
+              <h4>Programs Affected If Fails</h4>
+              <ul className="simple-list">
+                {selectedNode.affectedProgramsIfFails.length === 0 ? (
+                  <li>None</li>
+                ) : (
+                  selectedNode.affectedProgramsIfFails.map((name) => <li key={name}>{name}</li>)
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
