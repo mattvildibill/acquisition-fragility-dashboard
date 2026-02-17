@@ -1,96 +1,147 @@
-# acquisition-fragility-dashboard
+# 🚀 Acquisition Fragility Dashboard
 
-A weekend prototype for defense-acquisition teams to identify supply chain fragility, test what-if scenarios, and align on immediate mitigation priorities.
+**I built this prototype to demonstrate how I would approach building decision-support software for defense acquisition teams.**
 
-## Why this prototype exists
-Program offices often track supplier risk in isolation, but have limited visibility into program-level fragility and portfolio blast radius. This dashboard is designed to make that risk visible in one place, with clear scoring and explainable drivers.
+The goal: translate supplier-level risk into clear, explainable program-level fragility insight — and make it interactive, transparent, and immediately actionable.
 
-## What you can do in the demo
-- Portfolio triage: scan portfolio KPIs and sort programs by health, SPOFs, and no-supplier issues.
-- Explainable drivers: inspect top penalty components behind each program score.
-- Scenario save/load/share: run what-if supplier failures, save to localStorage, and share a scenario via URL.
-- Supplier critical nodes ranking: identify suppliers with the highest portfolio impact if they fail.
-- Rules-based recommended mitigations: view concise next steps for SPOF and no-supplier components.
+This project reflects how I think about complex, mission-critical systems: structured data models, explicit risk logic, and user-centered decision workflows.
 
-## What fragility means here
-For this prototype, fragility is component-level supplier concentration risk:
-- `Healthy`: component has 2+ active suppliers
-- `SPOF`: component has exactly 1 active supplier
-- `No Supplier`: component has 0 active suppliers
+---
 
-A program is more fragile when more required components are SPOF or have no supplier.
+## 🎯 Why I Built This
 
-## Health score model (simple and transparent)
-Each program gets a `0-100` score.
+In acquisition environments, supplier risk is often tracked in isolation — spreadsheets, static reports, disconnected tools.
 
-- Start at `100`
+What’s harder to answer:
+
+- Which programs are truly fragile right now?
+- Where do we have hidden single points of failure?
+- What happens if Supplier X becomes unavailable?
+- How do we justify mitigation priorities with defensible logic?
+
+This prototype is my answer to that problem.
+
+It demonstrates how a lightweight, explainable analytics tool could help program offices move from raw supplier data to actionable fragility insight.
+
+---
+
+## 🔍 What This Prototype Does
+
+- Models supplier → component → program dependencies
+- Identifies:
+  - **Single Points of Failure (SPOFs)**
+  - **Components with no active supplier**
+- Calculates a transparent **0–100 Program Health Score**
+- Shows exactly *why* a program’s score dropped
+- Enables interactive supplier failure simulation
+- Surfaces cascading impact across programs
+
+This is intentionally designed as a decision-support tool, not just a reporting dashboard.
+
+---
+
+## 📊 Health Score Model (Explainable by Design)
+
+Each program receives a 0–100 score based on supplier concentration risk.
+
+### Scoring Logic
+
+- Start at **100**
 - For each required component:
-  - `2+ active suppliers`: no penalty
-  - `SPOF`: subtract `45 * criticalityWeight`
-  - `No Supplier`: subtract `90 * criticalityWeight`
+  - `2+ active suppliers` → no penalty  
+  - `1 active supplier (SPOF)` → subtract `45 × criticalityWeight`  
+  - `0 active suppliers` → subtract `90 × criticalityWeight`
 - Criticality weights:
   - `LOW = 1.0`
   - `MED = 1.5`
   - `HIGH = 2.0`
-- Penalties are normalized across the program's total criticality weight
-- Score is clamped to `0-100`
+- Penalties are normalized across total program criticality
+- Final score clamped to `0–100`
 
-The UI also shows:
-- `% of components with 2+ active suppliers`
-- `SPOF component count`
-- `No-supplier component count`
-- top penalty drivers by component
+This model prioritizes:
 
-## Weekend-scope tradeoffs
-- Static JSON dataset (no backend, no auth)
-- Scenario persistence in browser localStorage only
-- URL-sharing is state-only (supplier activity map), not an audited collaboration workflow
-- Plain table/tree visual design instead of heavy graphing
-- Single-page app with focused decision-support loop rather than full enterprise workflow
+- High-criticality component failures  
+- True capability gaps (no supplier)  
+- Supplier concentration risk  
 
-## If evolving with a real customer
-- Replace JSON with API + authoritative supplier/program data feeds
-- Add user roles, access controls, and audit logs for scenario changes
-- Add alerting and trend history for supplier status changes
-- Extend scoring with lead time, capacity, qualification status, and geopolitical risk
-- Add saved mitigation plans and workflow handoff tracking
+The logic is fully transparent — no black-box modeling — because explainability matters in mission and acquisition environments.
 
-## Seed dataset summary
-Includes:
-- 3 programs
-- 6 components
-- 6 suppliers
-- Multiple true SPOFs at baseline
-- Failure cases where deactivation can create `No Supplier` components
+---
 
-## Tech stack
-- React + TypeScript + Vite
-- Static-site compatible (GitHub Pages)
+## 🧠 How I Think About the Problem
 
-## Local run
+This prototype reflects several principles I prioritize:
+
+### 1️⃣ Explainability Over Complexity  
+Risk scores should be defensible and easy to walk through in a review.
+
+### 2️⃣ Cascading Visibility  
+Supplier-level issues must roll up clearly into program-level impact.
+
+### 3️⃣ Scenario-Driven Insight  
+Decision-makers need to ask “what if?” and see impact instantly.
+
+### 4️⃣ Structured Data Modeling  
+Programs, components, suppliers, and relationships are treated as first-class entities — not flattened tables.
+
+---
+
+## 📦 Seed Dataset
+
+The demo includes:
+
+- 3 programs  
+- 6 components  
+- 6 suppliers  
+- True baseline SPOFs  
+- Simulated “No Active Supplier” failure cases  
+
+Example scenarios:
+- Deactivating a secure RF supplier creates a full capability gap
+- Certain components operate as true SPOFs at baseline
+- Cascading supplier failures impact multiple programs simultaneously
+
+---
+
+## 🏗️ Engineering Decisions
+
+To keep this focused and deployable:
+
+- Static JSON dataset (no backend required)
+- Pure TypeScript scoring logic
+- Deterministic, testable calculations
+- Single-page React app optimized for GitHub Pages
+- Clear separation between data model, scoring engine, and UI
+
+This reflects how I scope and build high-signal prototypes under constraints.
+
+---
+
+## 🌱 How This Would Evolve in Production
+
+If integrated into a real acquisition environment, I would extend this with:
+
+- API-backed supplier and program data feeds
+- Scenario save / compare workflows
+- Time-series supplier availability tracking
+- Lead time and capacity weighting
+- Role-based access controls and audit logs
+- Portfolio-level risk heatmaps
+- Executive-ready reporting outputs
+
+---
+
+## 🛠️ Tech Stack
+
+- React  
+- TypeScript  
+- Vite  
+- Static-site compatible (GitHub Pages)  
+
+---
+
+## 🚀 Run Locally
+
 ```bash
 npm install
 npm run dev
-```
-
-## Build
-```bash
-npm run build
-npm run preview
-```
-
-## Deploy to GitHub Pages
-This repository name is assumed to be `acquisition-fragility-dashboard`, and `vite.config.ts` already sets:
-- `base: '/acquisition-fragility-dashboard/'`
-
-Then deploy:
-
-```bash
-npm install
-npm run deploy
-```
-
-Requirements:
-- `gh-pages` package is included in `devDependencies`
-- You have push access to the repository
-- GitHub Pages is configured to serve from the `gh-pages` branch
