@@ -135,11 +135,3 @@ export interface PortfolioSummary {
   programRows: PortfolioProgramRow[];
   criticalNodes: CriticalSupplierNode[];
 }
-
-export interface SavedScenario {
-  scenarioId: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  supplierActiveMap: SupplierActiveMap;
-}

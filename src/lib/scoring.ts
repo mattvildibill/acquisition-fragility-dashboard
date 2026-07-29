@@ -48,14 +48,6 @@ function getComponentById(componentId: string, data: Dataset): Component {
   return component;
 }
 
-function getProgramById(programId: string, data: Dataset): Program {
-  const program = data.programs.find((item) => item.id === programId);
-  if (!program) {
-    throw new Error(`Unknown program id: ${programId}`);
-  }
-  return program;
-}
-
 export function getProgramComponents(programId: string, data: Dataset): Component[] {
   const ids = data.programComponentLinks
     .filter((item) => item.programId === programId)
@@ -561,13 +553,3 @@ export function formatStatusLabel(status: ComponentStatus): string {
   return 'Healthy';
 }
 
-export function formatScenarioTimestamp(value: string | null): string {
-  if (!value) {
-    return 'Baseline';
-  }
-  return new Date(value).toLocaleString();
-}
-
-export function getProgramName(programId: string, data: Dataset): string {
-  return getProgramById(programId, data).name;
-}

@@ -1,74 +1,41 @@
-import type { Dataset, Supplier, SupplierActiveMap } from '../data/types';
-import { formatExposureLabel, getSupplierImpactSummary } from '../lib/scoring';
+import type { Supplier, SupplierActiveMap } from '../data/types';
+import { formatExposureLabel } from '../lib/scoring';
 
 interface SupplierPanelProps {
   suppliers: Supplier[];
   supplierActiveMap: SupplierActiveMap;
-  data: Dataset;
   onToggleSupplier: (supplierId: string) => void;
 }
 
-export function SupplierPanel({ suppliers, supplierActiveMap, data, onToggleSupplier }: SupplierPanelProps): JSX.Element {
-  const activeSuppliers = suppliers.filter((supplier) => supplierActiveMap[supplier.id] ?? supplier.isActive);
-  const inactiveSuppliers = suppliers.filter((supplier) => !(supplierActiveMap[supplier.id] ?? supplier.isActive));
+export function SupplierPanel({ suppliers, supplierActiveMap, onToggleSupplier }: SupplierPanelProps): JSX.Element {
+  // Active suppliers first so the ones you're most likely to click - the ones
+  // still delivering - aren't buried below whatever's already offline.
+  const ordered = [...suppliers].sort((a, b) => {
+    const aActive = supplierActiveMap[a.id] ?? a.isActive;
+    const bActive = supplierActiveMap[b.id] ?? b.isActive;
+    if (aActive === bActive) {
+      return a.name.localeCompare(b.name);
+    }
+    return aActive ? -1 : 1;
+  });
 
   return (
     <section className="card supplier-panel">
-      <h3>Simulate Supplier Failure</h3>
-      <p className="muted">Toggle supplier status to simulate disruptions and mitigation scenarios.</p>
-      <div className="supplier-columns">
-        <SupplierColumn
-          title="Active"
-          suppliers={activeSuppliers}
-          supplierActiveMap={supplierActiveMap}
-          data={data}
-          onToggleSupplier={onToggleSupplier}
-        />
-        <SupplierColumn
-          title="Inactive"
-          suppliers={inactiveSuppliers}
-          supplierActiveMap={supplierActiveMap}
-          data={data}
-          onToggleSupplier={onToggleSupplier}
-        />
-      </div>
-    </section>
-  );
-}
-
-interface SupplierColumnProps {
-  title: string;
-  suppliers: Supplier[];
-  supplierActiveMap: SupplierActiveMap;
-  data: Dataset;
-  onToggleSupplier: (supplierId: string) => void;
-}
-
-function SupplierColumn({ title, suppliers, supplierActiveMap, data, onToggleSupplier }: SupplierColumnProps): JSX.Element {
-  return (
-    <div>
-      <h4>{title}</h4>
+      <h2>Suppliers</h2>
+      <p className="muted">Click a supplier to take it offline and see what breaks.</p>
       <div className="supplier-list">
-        {suppliers.map((supplier) => {
+        {ordered.map((supplier) => {
           const status = supplierActiveMap[supplier.id] ?? supplier.isActive;
-          const impacts = getSupplierImpactSummary(supplier.id, supplierActiveMap, data);
+
           return (
-            <div key={supplier.id} className="supplier-row">
-              <div>
-                <div className="supplier-title">
-                  {supplier.name}
-                  {supplier.foreignExposure !== 'DOMESTIC' ? (
-                    <span className={`exposure-tag exposure-${supplier.foreignExposure.toLowerCase()}`}>
-                      {formatExposureLabel(supplier.foreignExposure)}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="muted">{supplier.location}</div>
-                <div className="muted">
-                  Impacts: {impacts.impactedPrograms} programs / {impacts.impactedComponents} components
-                </div>
-                {typeof supplier.riskScore === 'number' ? (
-                  <div className="muted">Risk Score: {supplier.riskScore}</div>
+            <div key={supplier.id} className={`supplier-row ${status ? '' : 'supplier-row-inactive'}`}>
+              <div className="supplier-identity">
+                <span className="supplier-title">{supplier.name}</span>
+                <span className="muted supplier-location">{supplier.location}</span>
+                {supplier.foreignExposure !== 'DOMESTIC' ? (
+                  <span className={`exposure-tag exposure-${supplier.foreignExposure.toLowerCase()}`}>
+                    {formatExposureLabel(supplier.foreignExposure)}
+                  </span>
                 ) : null}
               </div>
               <div className="supplier-actions">
@@ -79,6 +46,6 @@ function SupplierColumn({ title, suppliers, supplierActiveMap, data, onToggleSup
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }

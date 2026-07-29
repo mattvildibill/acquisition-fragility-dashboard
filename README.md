@@ -6,7 +6,7 @@ A small tool for one question: **if a supplier goes down, which programs stop, a
 
 Supplier risk usually lives in a spreadsheet — a list of vendors with a risk score next to each. That tells you a vendor looks shaky. It doesn't tell you that the shaky vendor is the only qualified source for a part that three programs depend on, or that the nearest alternate is 64 weeks of qualification away. This models the dependency graph so you can ask the second question.
 
-![Program detail with a supplier taken offline](docs/screenshot.png)
+![Aegis Communications Node dropping to 55 with a 64-week restore estimate after Cobalt Dynamics goes offline](docs/screenshot.png)
 
 ## Try it
 
@@ -17,10 +17,11 @@ npm run dev
 
 The 30-second version, using the seeded demo data:
 
-1. **Baseline.** Portfolio health sits at 72 and no program is below the 60 at-risk line. Risk Overview flags the Secure RF Modem as sole-sourced to Cobalt Dynamics — which is adversary-linked.
-2. **Deactivate Cobalt Dynamics** in the supplier panel on the left.
-3. Two programs fall below the line: Aegis Communications Node 71 → 55, Falcon Precision Munition 65 → 52. The Secure RF Modem now has no active supplier at all.
-4. **Select Aegis.** The restore banner reads **64 weeks** — the only qualified alternate on file is a Norwegian supplier, and that's the qualification lead time.
+1. **Baseline.** Portfolio health sits at 72 and none of the three program tabs show a red at-risk dot.
+2. **Deactivate Cobalt Dynamics** in the supplier list on the left — it's the sole source for the Secure RF Modem, and it's tagged adversary-linked.
+3. Two tabs pick up a red dot: Aegis Communications Node 71 → 55, Falcon Precision Munition 65 → 52. The Secure RF Modem now has no active supplier at all.
+4. **Click the Aegis tab.** The restore banner reads **64 weeks** — the only qualified alternate on file is a Norwegian supplier, and that's the qualification lead time.
+5. Open **"See the full model"** for the dependency graph and the supplier ranking table, plus the adversary-linked-sole-source callout, kept out of the main view so the first screen stays to the point.
 
 A vendor risk list would have shown Cobalt Dynamics at 58/100 and stopped there. The 64 weeks is the number that actually changes what you do about it.
 
@@ -71,7 +72,7 @@ Being specific, because most of this is load-bearing if anyone tried to use it:
 - **No sub-tier visibility.** Every real single point of failure I've read about lives two or three tiers down, at a foundry or a specialty alloy mill that no prime has on a diagram. This models tier one only, which is the easy part.
 - **Restore assumes gaps close in parallel** and that qualification is the only constraint. No engineering capacity, no tooling, no funding line.
 - **Ownership exposure is an enum someone typed into a JSON file.** The real version of that field is an entity-resolution problem over corporate hierarchies, and it's harder than everything else here combined.
-- **Scenarios are localStorage only.** Share links encode state in the URL, which works but breaks if the dataset changes underneath.
+- **Scenarios aren't persisted server-side.** There's a "copy link to this scenario" button that encodes supplier state into the URL, which works for sharing one link but breaks if the dataset changes underneath it, and there's no way to name or list past scenarios.
 
 ## If it had real data
 
@@ -98,8 +99,7 @@ React, TypeScript, Vite. No component library, no state management library, no b
 ```
 src/lib/scoring.ts     scoring engine, no React imports
 src/data/              types and the seeded dataset
-src/components/        presentational pieces
-src/pages/             the two main panels
+src/components/        everything else — panels, tabs, the dependency graph
 ```
 
 ## Data
