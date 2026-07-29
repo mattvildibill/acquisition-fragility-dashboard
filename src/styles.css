@@ -289,21 +289,38 @@ select {
 
 /* --- Impact panel --- */
 
-.health-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  align-items: start;
+.score-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.score-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 0.5rem 0.85rem;
+}
+
+.score-tile-primary {
+  background: #f7fafc;
+  border-color: #d2dfec;
 }
 
 .score-label {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--muted);
 }
 
 .score-value {
-  font-size: 2rem;
+  font-size: 1.9rem;
   font-weight: 700;
+  line-height: 1.1;
   color: var(--title);
 }
 
@@ -312,8 +329,7 @@ select {
 }
 
 .score-delta {
-  margin: 0.15rem 0 0;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
 }
 
@@ -325,9 +341,17 @@ select {
   color: var(--green);
 }
 
-.metric-list {
-  margin: 0;
-  padding-left: 1.2rem;
+.score-tile-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--title);
+  line-height: 1.1;
+}
+
+.score-tile-label {
+  font-size: 0.76rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .table-scroll {
@@ -748,10 +772,13 @@ select {
     grid-template-columns: 1fr;
   }
 
-  .health-grid,
   .detail-columns,
   .dependency-map-head {
     grid-template-columns: 1fr;
+  }
+
+  .score-tile {
+    flex: 1 1 45%;
   }
 
   .dependency-grid {

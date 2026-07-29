@@ -26,25 +26,30 @@ export function ProgramDetailPage({
 
   return (
     <section className="card impact-panel">
-      <div className="health-grid">
-        <div className="health-score">
-          <div className="score-label">Program Health Score</div>
-          <div className={`score-value ${atRisk ? 'score-at-risk' : ''}`}>{breakdown.score}</div>
+      <div className="score-strip">
+        <div className="score-tile score-tile-primary">
+          <span className="score-label">Program Health Score</span>
+          <span className={`score-value ${atRisk ? 'score-at-risk' : ''}`}>{breakdown.score}</span>
           {scoreDelta !== 0 ? (
-            <p className={`score-delta ${scoreDelta < 0 ? 'negative' : 'positive'}`}>
+            <span className={`score-delta ${scoreDelta < 0 ? 'negative' : 'positive'}`}>
               {scoreDelta > 0 ? '+' : ''}
               {scoreDelta} vs. baseline
-            </p>
+            </span>
           ) : (
-            <p className="muted score-delta">Baseline</p>
+            <span className="muted score-delta">Baseline</span>
           )}
         </div>
-        <div>
-          <ul className="metric-list">
-            <li>{breakdown.resilientCoveragePct}% with 2+ active suppliers</li>
-            <li>{breakdown.spofCount} SPOF component(s)</li>
-            <li>{breakdown.noSupplierCount} no-supplier component(s)</li>
-          </ul>
+        <div className="score-tile">
+          <span className="score-tile-value">{breakdown.resilientCoveragePct}%</span>
+          <span className="score-tile-label">2+ active suppliers</span>
+        </div>
+        <div className="score-tile">
+          <span className="score-tile-value">{breakdown.spofCount}</span>
+          <span className="score-tile-label">SPOF component(s)</span>
+        </div>
+        <div className="score-tile">
+          <span className="score-tile-value">{breakdown.noSupplierCount}</span>
+          <span className="score-tile-label">no-supplier component(s)</span>
         </div>
       </div>
 
