@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Dataset, SupplierActiveMap } from '../data/types';
-import { computeComponentStatus, getComponentSuppliers, getProgramComponents } from '../lib/scoring';
+import {
+  computeComponentStatus,
+  computeProgramBreakdown,
+  formatRestoreWeeks,
+  getComponentSuppliers,
+  getProgramComponents
+} from '../lib/scoring';
 import { RiskBadge } from './RiskBadge';
 
 interface DependencyTreeProps {
@@ -21,17 +27,26 @@ export function DependencyTree({ programId, supplierActiveMap, data }: Dependenc
     setShowAllLinks(false);
   }, [programId]);
 
+  // Reuses the same breakdown the Impact panel renders, rather than
+  // recomputing recovery weeks separately, so the two views can't drift.
+  const breakdown = useMemo(
+    () => computeProgramBreakdown(programId, supplierActiveMap, data),
+    [programId, supplierActiveMap, data]
+  );
+
   const componentEntries = useMemo(() => {
     return components.map((component) => {
       const details = computeComponentStatus(component.id, supplierActiveMap, data);
+      const driver = breakdown.drivers.find((item) => item.componentId === component.id);
       return {
         component,
         status: details.status,
         activeSuppliers: details.activeSuppliers.length,
-        totalSuppliers: details.allSuppliers.length
+        totalSuppliers: details.allSuppliers.length,
+        recoveryWeeks: driver?.recoveryWeeks ?? null
       };
     });
-  }, [components, supplierActiveMap, data]);
+  }, [components, supplierActiveMap, data, breakdown]);
 
   const selectedComponent = components.find((item) => item.id === selectedComponentId) ?? components[0];
   const selectedComponentStatus = selectedComponent
@@ -118,6 +133,11 @@ export function DependencyTree({ programId, supplierActiveMap, data }: Dependenc
                     <small className="muted">
                       {entry.component.criticality} criticality | {entry.activeSuppliers}/{entry.totalSuppliers} active suppliers
                     </small>
+                    {entry.status !== 'HEALTHY' ? (
+                      <small className={entry.recoveryWeeks === null ? 'restore-stranded' : 'muted'}>
+                        Restore: {formatRestoreWeeks(entry.recoveryWeeks)}
+                      </small>
+                    ) : null}
                   </div>
                 </button>
               );
@@ -171,7 +191,19 @@ export function DependencyTree({ programId, supplierActiveMap, data }: Dependenc
             ? 'without any active supplier'
             : selectedComponentStatus.status === 'SPOF'
             ? 'operating as a single point of failure'
-            : 'supported by multiple active suppliers'}.
+            : 'supported by multiple active suppliers'}
+          {selectedComponentStatus.status !== 'HEALTHY' ? (
+            <>
+              {' '}— restore estimate:{' '}
+              <strong>
+                {formatRestoreWeeks(
+                  componentEntries.find((entry) => entry.component.id === selectedComponent?.id)?.recoveryWeeks ??
+                    null
+                )}
+              </strong>
+            </>
+          ) : null}
+          .
         </p>
       ) : null}
     </section>

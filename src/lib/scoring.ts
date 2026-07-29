@@ -535,7 +535,7 @@ export function formatExposureLabel(exposure: ForeignExposure): string {
 
 export function formatRestoreWeeks(weeks: number | null): string {
   if (weeks === null) {
-    return 'No known path';
+    return 'No alternate on file';
   }
   if (weeks === 0) {
     return 'Restored';

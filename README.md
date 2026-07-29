@@ -73,6 +73,7 @@ Being specific, because most of this is load-bearing if anyone tried to use it:
 - **Restore assumes gaps close in parallel** and that qualification is the only constraint. No engineering capacity, no tooling, no funding line.
 - **Ownership exposure is an enum someone typed into a JSON file.** The real version of that field is an entity-resolution problem over corporate hierarchies, and it's harder than everything else here combined.
 - **Scenarios aren't persisted server-side.** There's a "copy link to this scenario" button that encodes supplier state into the URL, which works for sharing one link but breaks if the dataset changes underneath it, and there's no way to name or list past scenarios.
+- **A few components can still hit "No alternate on file."** Flight Control MCU and Power Regulation Module used to hit it by default — each had exactly one supplier ever recorded. Both now have a real, if expensive, second source. Inertial Navigation Unit and Thermal Imaging Core have the same latent gap: two active suppliers each, nothing on the shelf, so knocking out both still bottoms out at "no alternate" rather than a number.
 
 ## If it had real data
 
@@ -104,4 +105,4 @@ src/components/        everything else — panels, tabs, the dependency graph
 
 ## Data
 
-Everything in `src/data/dataset.json` is synthetic. Program names, suppliers, and lead times are invented to exercise the model — three programs, six components, seven suppliers, with a couple of scenarios worth clicking through. Nothing here is derived from real programs or real vendors.
+Everything in `src/data/dataset.json` is synthetic. Program names, suppliers, and lead times are invented to exercise the model — three programs, six components, nine suppliers, with a couple of scenarios worth clicking through. Nothing here is derived from real programs or real vendors.

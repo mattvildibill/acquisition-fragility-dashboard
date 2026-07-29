@@ -68,6 +68,22 @@
       "foreignExposure": "ALLIED",
       "riskScore": 35,
       "isActive": false
+    },
+    {
+      "id": "s8",
+      "name": "Ridgeline Fabrication",
+      "location": "Boise, ID",
+      "foreignExposure": "DOMESTIC",
+      "riskScore": 39,
+      "isActive": false
+    },
+    {
+      "id": "s9",
+      "name": "Meridian Power Systems",
+      "location": "Tulsa, OK",
+      "foreignExposure": "DOMESTIC",
+      "riskScore": 30,
+      "isActive": false
     }
   ],
   "programComponentLinks": [
@@ -96,8 +112,10 @@
     { "componentId": "c3", "supplierId": "s4", "qualificationWeeks": 12 },
 
     { "componentId": "c4", "supplierId": "s5", "qualificationWeeks": 34 },
+    { "componentId": "c4", "supplierId": "s9", "qualificationWeeks": 22 },
 
     { "componentId": "c5", "supplierId": "s1", "qualificationWeeks": 52 },
+    { "componentId": "c5", "supplierId": "s8", "qualificationWeeks": 70 },
 
     { "componentId": "c6", "supplierId": "s6", "qualificationWeeks": 8 },
     { "componentId": "c6", "supplierId": "s7", "qualificationWeeks": 10 }
