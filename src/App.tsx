@@ -140,6 +140,7 @@ export default function App(): JSX.Element {
         scenarioName={scenarioName}
         lastUpdatedLabel={lastUpdatedLabel}
         compareEnabled={compareEnabled}
+        isBaseline={isBaselineScenario}
       />
 
       <DemoIntro />

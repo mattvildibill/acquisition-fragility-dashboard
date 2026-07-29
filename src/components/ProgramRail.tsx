@@ -75,6 +75,9 @@ export function ProgramRail({
               <div className="program-rail-meta">
                 <span>SPOF: {row.spofCount}</span>
                 <span>No supplier: {row.noSupplierCount}</span>
+                {row.longestRestoreWeeks !== null ? (
+                  <span className="rail-restore">Restore: {row.longestRestoreWeeks}w</span>
+                ) : null}
               </div>
               <div className="program-rail-meta">
                 <span className="muted">Top driver: {row.topDriverComponent}</span>

@@ -925,3 +925,93 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Ownership exposure and restore timing --- */
+
+.exposure-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.exposure-tag.exposure-adversary_linked {
+  background: #fce8e6;
+  color: var(--red);
+}
+
+.exposure-tag.exposure-allied {
+  background: #eaf0f7;
+  color: #3a5a80;
+}
+
+.exposure-tag.exposure-domestic {
+  background: #eef1f4;
+  color: var(--muted);
+}
+
+/* Table cells already carry left padding, so reset the inline offset there. */
+.data-table .exposure-tag {
+  margin-left: 0;
+}
+
+.exposure-callout {
+  margin: 0;
+  border-left: 3px solid var(--red);
+  background: #fdf0ef;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.82rem;
+  color: #6d2f2a;
+}
+
+.restore-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--orange);
+  border-radius: 4px;
+  background: #fdf6ec;
+  padding: 0.55rem 0.75rem;
+}
+
+.restore-banner-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.restore-banner-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--title);
+}
+
+.restore-banner .muted {
+  flex: 1 1 16rem;
+  font-size: 0.82rem;
+}
+
+.restore-stranded {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.rail-restore {
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.topbar-pill.topbar-pill-edited {
+  background: #fdf6ec;
+  color: #8a5a1c;
+  font-weight: 600;
+}

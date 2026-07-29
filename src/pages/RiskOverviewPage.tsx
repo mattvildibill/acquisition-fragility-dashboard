@@ -21,10 +21,21 @@ export function RiskOverviewPage({ data, supplierActiveMap }: RiskOverviewPagePr
     })
     .filter((item) => item.details.status === 'SPOF' || item.details.status === 'NO_SUPPLIER');
 
+  const adversarySoleSources = flaggedComponents.filter(
+    (item) => item.details.activeSuppliers[0]?.foreignExposure === 'ADVERSARY_LINKED'
+  );
+
   return (
     <section className="card risk-panel">
       <h2>Risk Overview</h2>
       <p className="muted">Current SPOF and no-supplier components with impacted programs and suggested action.</p>
+
+      {adversarySoleSources.length > 0 ? (
+        <p className="exposure-callout">
+          {adversarySoleSources.length} component(s) sole-sourced to an adversary-linked supplier. Tracked
+          separately from the health score — second-sourcing fixes availability, not ownership.
+        </p>
+      ) : null}
 
       {flaggedComponents.length === 0 ? (
         <p className="muted">No SPOF or no-supplier components in the current scenario.</p>
@@ -38,6 +49,11 @@ export function RiskOverviewPage({ data, supplierActiveMap }: RiskOverviewPagePr
               </div>
               <div className="risk-meta">Criticality: {component.criticality}</div>
               <div className="risk-meta">Programs: {impactedPrograms.map((program) => program.name).join(', ')}</div>
+              {details.activeSuppliers[0]?.foreignExposure === 'ADVERSARY_LINKED' ? (
+                <div className="risk-meta">
+                  <span className="exposure-tag exposure-adversary_linked">Adversary-linked sole source</span>
+                </div>
+              ) : null}
               <div className="risk-next-step">
                 <span>Next step</span>
                 <p>{mitigation}</p>

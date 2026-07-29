@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { CriticalSupplierNode, Dataset } from '../data/types';
+import { formatExposureLabel } from '../lib/scoring';
 
 interface CriticalNodesProps {
   nodes: CriticalSupplierNode[];
@@ -22,6 +23,7 @@ export function CriticalNodes({ nodes, data }: CriticalNodesProps): JSX.Element 
           <thead>
             <tr>
               <th>Supplier</th>
+              <th>Ownership</th>
               <th># SPOF Components</th>
               <th># Programs Impacted If Fails</th>
             </tr>
@@ -34,6 +36,11 @@ export function CriticalNodes({ nodes, data }: CriticalNodesProps): JSX.Element 
                 onClick={() => setSelectedSupplierId(node.supplierId)}
               >
                 <td>{node.supplierName}</td>
+                <td>
+                  <span className={`exposure-tag exposure-${node.foreignExposure.toLowerCase()}`}>
+                    {formatExposureLabel(node.foreignExposure)}
+                  </span>
+                </td>
                 <td>{node.spofComponents.length}</td>
                 <td>{node.affectedProgramsIfFails.length}</td>
               </tr>
