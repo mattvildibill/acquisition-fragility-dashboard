@@ -1,5 +1,5 @@
 import type { Dataset, Supplier, SupplierActiveMap } from '../data/types';
-import { getSupplierImpactSummary } from '../lib/scoring';
+import { formatExposureLabel, getSupplierImpactSummary } from '../lib/scoring';
 
 interface SupplierPanelProps {
   suppliers: Supplier[];
@@ -55,7 +55,14 @@ function SupplierColumn({ title, suppliers, supplierActiveMap, data, onToggleSup
           return (
             <div key={supplier.id} className="supplier-row">
               <div>
-                <div className="supplier-title">{supplier.name}</div>
+                <div className="supplier-title">
+                  {supplier.name}
+                  {supplier.foreignExposure !== 'DOMESTIC' ? (
+                    <span className={`exposure-tag exposure-${supplier.foreignExposure.toLowerCase()}`}>
+                      {formatExposureLabel(supplier.foreignExposure)}
+                    </span>
+                  ) : null}
+                </div>
                 <div className="muted">{supplier.location}</div>
                 <div className="muted">
                   Impacts: {impacts.impactedPrograms} programs / {impacts.impactedComponents} components

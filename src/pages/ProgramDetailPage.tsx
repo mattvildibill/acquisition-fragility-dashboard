@@ -1,10 +1,11 @@
-import type { Dataset, SupplierActiveMap } from '../data/types';
+import type { Dataset, RestoreOutlook, SupplierActiveMap } from '../data/types';
 import { DependencyTree } from '../components/DependencyTree';
 import { ProgramDrivers } from '../components/ProgramDrivers';
 import { RiskBadge } from '../components/RiskBadge';
 import {
   computeComponentStatus,
   computeProgramBreakdown,
+  formatRestoreWeeks,
   getComponentMitigation,
   getProgramComponents
 } from '../lib/scoring';
@@ -61,6 +62,8 @@ export function ProgramDetailPage({
         </div>
       </div>
 
+      <RestoreOutlookBanner restore={breakdown.restore} />
+
       <details className="accordion">
         <summary>How scoring works</summary>
         <p className="muted">{breakdown.explanation}</p>
@@ -77,6 +80,7 @@ export function ProgramDetailPage({
               <th>Status</th>
               <th>Active Suppliers</th>
               <th>Penalty</th>
+              <th>Restore</th>
               <th>Recommended Next Step</th>
             </tr>
           </thead>
@@ -106,6 +110,11 @@ export function ProgramDetailPage({
                       : 'None'}
                   </td>
                   <td>{driver?.penalty.toFixed(1) ?? '0.0'}</td>
+                  {/* Not `driver?.recoveryWeeks ?? 0` — null means "no way back",
+                      and ?? would quietly render that as "Restored". */}
+                  <td className={driver && driver.recoveryWeeks === null ? 'restore-stranded' : ''}>
+                    {driver ? formatRestoreWeeks(driver.recoveryWeeks) : '—'}
+                  </td>
                   <td>{getComponentMitigation(component.id, supplierActiveMap, data)}</td>
                 </tr>
               );
@@ -116,5 +125,30 @@ export function ProgramDetailPage({
 
       <ProgramDrivers drivers={breakdown.drivers} />
     </section>
+  );
+}
+
+/**
+ * The score says how bad it is. This says how long you are stuck there, which is
+ * usually the number that actually drives a decision.
+ */
+function RestoreOutlookBanner({ restore }: { restore: RestoreOutlook }): JSX.Element | null {
+  if (restore.gapComponents === 0) {
+    return null;
+  }
+
+  const stranded = restore.unresolvableComponents;
+
+  return (
+    <div className="restore-banner" role="status">
+      <span className="restore-banner-label">Time to restore</span>
+      <span className="restore-banner-value">{formatRestoreWeeks(restore.longestRestoreWeeks)}</span>
+      <span className="muted">
+        {restore.drivingComponent
+          ? `Driven by ${restore.drivingComponent}; ${restore.gapComponents} component(s) with no active supplier.`
+          : `${restore.gapComponents} component(s) with no active supplier.`}
+        {stranded.length > 0 ? ` No qualified alternate on file for ${stranded.join(', ')}.` : ''}
+      </span>
+    </div>
   );
 }
