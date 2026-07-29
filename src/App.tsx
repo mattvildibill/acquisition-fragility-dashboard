@@ -87,6 +87,8 @@ export default function App(): JSX.Element {
 
       <FullModelSection
         selectedProgramId={selectedProgramId}
+        onSelectProgram={setSelectedProgramId}
+        programRows={currentSummary.programRows}
         data={dataset}
         supplierActiveMap={supplierActiveMap}
         criticalNodes={currentSummary.criticalNodes}

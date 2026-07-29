@@ -1,9 +1,12 @@
-import type { CriticalSupplierNode, Dataset, SupplierActiveMap } from '../data/types';
+import type { CriticalSupplierNode, Dataset, PortfolioProgramRow, SupplierActiveMap } from '../data/types';
 import { CriticalNodes } from './CriticalNodes';
 import { DependencyTree } from './DependencyTree';
+import { ProgramTabs } from './ProgramTabs';
 
 interface FullModelSectionProps {
   selectedProgramId: string;
+  onSelectProgram: (programId: string) => void;
+  programRows: PortfolioProgramRow[];
   data: Dataset;
   supplierActiveMap: SupplierActiveMap;
   criticalNodes: CriticalSupplierNode[];
@@ -12,6 +15,8 @@ interface FullModelSectionProps {
 
 export function FullModelSection({
   selectedProgramId,
+  onSelectProgram,
+  programRows,
   data,
   supplierActiveMap,
   criticalNodes,
@@ -28,6 +33,16 @@ export function FullModelSection({
             availability, not ownership.
           </p>
         ) : null}
+
+        <div className="full-model-program-picker">
+          <span className="muted full-model-program-label">Dependency graph for:</span>
+          <ProgramTabs
+            rows={programRows}
+            selectedProgramId={selectedProgramId}
+            onSelectProgram={onSelectProgram}
+            ariaLabel="Select a program for the dependency graph"
+          />
+        </div>
 
         <DependencyTree programId={selectedProgramId} supplierActiveMap={supplierActiveMap} data={data} />
         <CriticalNodes nodes={criticalNodes} data={data} />

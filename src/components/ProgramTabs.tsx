@@ -5,11 +5,17 @@ interface ProgramTabsProps {
   rows: PortfolioProgramRow[];
   selectedProgramId: string;
   onSelectProgram: (programId: string) => void;
+  ariaLabel?: string;
 }
 
-export function ProgramTabs({ rows, selectedProgramId, onSelectProgram }: ProgramTabsProps): JSX.Element {
+export function ProgramTabs({
+  rows,
+  selectedProgramId,
+  onSelectProgram,
+  ariaLabel = 'Select a program'
+}: ProgramTabsProps): JSX.Element {
   return (
-    <div className="program-tabs" role="tablist" aria-label="Select a program">
+    <div className="program-tabs" role="tablist" aria-label={ariaLabel}>
       {rows.map((row) => {
         const atRisk = row.score < PROGRAM_AT_RISK_THRESHOLD;
         const isSelected = row.programId === selectedProgramId;
