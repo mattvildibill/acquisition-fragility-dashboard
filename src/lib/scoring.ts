@@ -1,11 +1,14 @@
 import type {
   Component,
   ComponentStatus,
+  CriticalSupplierNode,
   Dataset,
+  ForeignExposure,
   PortfolioSummary,
   Program,
   ProgramBreakdown,
   ProgramDriver,
+  RestoreOutlook,
   Supplier,
   SupplierActiveMap
 } from '../data/types';
@@ -67,6 +70,56 @@ export function getComponentSuppliers(componentId: string, data: Dataset): Suppl
   return data.suppliers.filter((item) => ids.includes(item.id));
 }
 
+function getQualificationWeeks(componentId: string, supplierId: string, data: Dataset): number | null {
+  const link = data.componentSupplierLinks.find(
+    (item) => item.componentId === componentId && item.supplierId === supplierId
+  );
+  return link?.qualificationWeeks ?? null;
+}
+
+/**
+ * Alternates you could actually turn to: suppliers linked to the component that
+ * are on the shelf rather than in the fire.
+ *
+ * The distinction matters. `inactiveSuppliers` includes anyone the scenario just
+ * knocked offline, and the first cut of this happily recommended requalifying
+ * the supplier that had failed a moment earlier. A vendor who is down because we
+ * simulated losing them is not the recovery path — so candidates are restricted
+ * to suppliers that are inactive in the source data too.
+ */
+function getShelfAlternates(inactiveSuppliers: Supplier[]): Supplier[] {
+  return inactiveSuppliers.filter((supplier) => !supplier.isActive);
+}
+
+/**
+ * Weeks to get a component back to a healthy posture by standing up the fastest
+ * alternate source that is not already producing.
+ *
+ * Returns null when no qualified alternate exists in the dataset. That is the
+ * worst case, not the best one: it means the only path forward is sourcing a
+ * supplier the model does not know about. Callers must not treat null as zero.
+ */
+function computeRecoveryWeeks(
+  componentId: string,
+  status: ComponentStatus,
+  inactiveSuppliers: Supplier[],
+  data: Dataset
+): number | null {
+  if (status === 'HEALTHY') {
+    return 0;
+  }
+
+  const candidateWeeks = getShelfAlternates(inactiveSuppliers)
+    .map((supplier) => getQualificationWeeks(componentId, supplier.id, data))
+    .filter((weeks): weeks is number => weeks !== null);
+
+  if (candidateWeeks.length === 0) {
+    return null;
+  }
+
+  return Math.min(...candidateWeeks);
+}
+
 export function computeComponentStatus(
   componentId: string,
   supplierActiveMap: SupplierActiveMap,
@@ -109,22 +162,75 @@ function getPenalty(component: Component, status: ComponentStatus): number {
   return 0;
 }
 
-function getRecommendedNextStep(status: ComponentStatus, inactiveSuppliers: Supplier[]): string {
+function getRecommendedNextStep(
+  componentId: string,
+  status: ComponentStatus,
+  inactiveSuppliers: Supplier[],
+  data: Dataset
+): string {
+  if (status === 'HEALTHY') {
+    return 'Monitor supplier resiliency posture';
+  }
+
+  // Recommend the fastest path back, not just the first alternate we happen to
+  // find. An 18-month qualification and a 3-month one are not the same advice.
+  const ranked = getShelfAlternates(inactiveSuppliers)
+    .map((supplier) => ({ supplier, weeks: getQualificationWeeks(componentId, supplier.id, data) }))
+    .filter((item): item is { supplier: Supplier; weeks: number } => item.weeks !== null)
+    .sort((a, b) => a.weeks - b.weeks);
+
+  const fastest = ranked[0];
+
   if (status === 'NO_SUPPLIER') {
-    if (inactiveSuppliers.length > 0) {
-      return `Identify/qualify alternate supplier; activate/qualify inactive supplier: ${inactiveSuppliers[0].name}`;
+    if (fastest) {
+      return `Qualify ${fastest.supplier.name} to close the gap (~${fastest.weeks} weeks)`;
     }
-    return 'Identify/qualify alternate supplier; component currently unfulfilled';
+    return 'No qualifiable alternate on file — source a new supplier';
   }
 
-  if (status === 'SPOF') {
-    if (inactiveSuppliers.length > 0) {
-      return `Add second active supplier to reduce SPOF; activate/qualify inactive supplier: ${inactiveSuppliers[0].name}`;
-    }
-    return 'Add second active supplier to reduce SPOF';
+  if (fastest) {
+    return `Qualify ${fastest.supplier.name} as a second source (~${fastest.weeks} weeks)`;
+  }
+  return 'No qualifiable alternate on file — sole source with no recovery path';
+}
+
+const EMPTY_RESTORE_OUTLOOK: RestoreOutlook = {
+  gapComponents: 0,
+  longestRestoreWeeks: null,
+  drivingComponent: null,
+  unresolvableComponents: []
+};
+
+/**
+ * Restore outlook is driven only by components with zero active suppliers.
+ * A SPOF is fragile but still delivering; a gap is the thing that actually stops
+ * a line. Mixing the two produced a headline number that never moved, so the
+ * scope here is deliberately narrow.
+ */
+function computeRestoreOutlook(drivers: ProgramDriver[]): RestoreOutlook {
+  const gaps = drivers.filter((driver) => driver.status === 'NO_SUPPLIER');
+
+  if (gaps.length === 0) {
+    return EMPTY_RESTORE_OUTLOOK;
   }
 
-  return 'Monitor supplier resiliency posture';
+  const unresolvable = gaps.filter((driver) => driver.recoveryWeeks === null);
+  const resolvable = gaps.filter(
+    (driver): driver is ProgramDriver & { recoveryWeeks: number } => driver.recoveryWeeks !== null
+  );
+
+  // The program is back when its slowest gap closes, so this is a max, not a sum.
+  const slowest = resolvable.reduce<(ProgramDriver & { recoveryWeeks: number }) | null>(
+    (worst, driver) => (!worst || driver.recoveryWeeks > worst.recoveryWeeks ? driver : worst),
+    null
+  );
+
+  return {
+    gapComponents: gaps.length,
+    longestRestoreWeeks: slowest?.recoveryWeeks ?? null,
+    drivingComponent: slowest?.componentName ?? null,
+    unresolvableComponents: unresolvable.map((driver) => driver.componentName)
+  };
 }
 
 export function computeProgramBreakdown(
@@ -146,6 +252,7 @@ export function computeProgramBreakdown(
       totalWeight: 0,
       topDriverComponent: 'None',
       drivers: [],
+      restore: EMPTY_RESTORE_OUTLOOK,
       explanation: 'No components mapped to this program yet; score defaults to 100.'
     };
   }
@@ -178,7 +285,18 @@ export function computeProgramBreakdown(
       criticality: component.criticality,
       status: componentStatus.status,
       penalty,
-      recommendedNextStep: getRecommendedNextStep(componentStatus.status, componentStatus.inactiveSuppliers)
+      recoveryWeeks: computeRecoveryWeeks(
+        component.id,
+        componentStatus.status,
+        componentStatus.inactiveSuppliers,
+        data
+      ),
+      recommendedNextStep: getRecommendedNextStep(
+        component.id,
+        componentStatus.status,
+        componentStatus.inactiveSuppliers,
+        data
+      )
     };
   });
 
@@ -205,6 +323,7 @@ export function computeProgramBreakdown(
     totalWeight,
     topDriverComponent,
     drivers: sortedDrivers,
+    restore: computeRestoreOutlook(sortedDrivers),
     explanation
   };
 }
@@ -219,7 +338,7 @@ export function getComponentMitigation(
   data: Dataset
 ): string {
   const details = computeComponentStatus(componentId, supplierActiveMap, data);
-  return getRecommendedNextStep(details.status, details.inactiveSuppliers);
+  return getRecommendedNextStep(componentId, details.status, details.inactiveSuppliers, data);
 }
 
 export function getImpactedPrograms(componentId: string, data: Dataset): Program[] {
@@ -267,31 +386,38 @@ function getSpofComponentsForSupplier(
     .map((component) => component.name);
 }
 
-function computeTopCriticalSupplier(
-  supplierActiveMap: SupplierActiveMap,
-  data: Dataset
-): PortfolioSummary['topCriticalSupplier'] {
-  let top: PortfolioSummary['topCriticalSupplier'] = null;
+/**
+ * Blast radius dominates: a supplier whose loss stops two programs outranks one
+ * sitting on three SPOFs that all still have a second source somewhere. The 2x
+ * is a judgement call, not a calibrated weight.
+ */
+function criticalityScore(node: CriticalSupplierNode): number {
+  return node.affectedProgramsIfFails.length * 2 + node.spofComponents.length;
+}
 
-  data.suppliers.forEach((supplier) => {
-    const spofComponents = getSpofComponentsForSupplier(supplier.id, supplierActiveMap, data);
-    const impactedPrograms = getProgramsImpactedIfSupplierFails(supplier.id, supplierActiveMap, data);
+/**
+ * Derived from the ranked node list rather than computed in its own pass.
+ * These were two separate loops with different tie-breaks, so on a tie the
+ * headline callout named one supplier while the table underneath it put a
+ * different one on top. Same ordering now feeds both.
+ */
+function toTopCriticalSupplier(rankedNodes: CriticalSupplierNode[]): PortfolioSummary['topCriticalSupplier'] {
+  const top = rankedNodes[0];
+  if (!top) {
+    return null;
+  }
 
-    // Simple weekend-friendly heuristic: prioritize potential blast radius (programs impacted)
-    // and break ties with existing SPOF concentration owned by the supplier.
-    const score = impactedPrograms.length * 2 + spofComponents.length;
+  const score = criticalityScore(top);
+  if (score === 0) {
+    return null;
+  }
 
-    if (score > 0 && (!top || score > top.score)) {
-      top = {
-        supplierId: supplier.id,
-        supplierName: supplier.name,
-        score,
-        reason: `${impactedPrograms.length} program(s) impacted if fails; ${spofComponents.length} SPOF component(s)`
-      };
-    }
-  });
-
-  return top;
+  return {
+    supplierId: top.supplierId,
+    supplierName: top.supplierName,
+    score,
+    reason: `${top.affectedProgramsIfFails.length} program(s) impacted if fails; ${top.spofComponents.length} SPOF component(s)`
+  };
 }
 
 export function computePortfolioSummary(
@@ -317,18 +443,31 @@ export function computePortfolioSummary(
   const totalNoSupplierComponents = componentStatuses.filter((item) => item.details.status === 'NO_SUPPLIER').length;
   const totalSpofComponents = componentStatuses.filter((item) => item.details.status === 'SPOF').length;
 
+  // A sole source that is also adversary-linked is a different problem from a
+  // sole source that is merely fragile: you cannot buy your way out of it with
+  // more volume. Counted separately rather than rolled into the health score.
+  const adversaryLinkedSoleSources = componentStatuses
+    .filter(
+      (item) =>
+        item.details.status === 'SPOF' &&
+        item.details.activeSuppliers[0]?.foreignExposure === 'ADVERSARY_LINKED'
+    )
+    .map((item) => item.component.name);
+
   const programRows = breakdowns.map((item) => ({
     programId: item.program.id,
     programName: item.program.name,
     score: item.breakdown.score,
     spofCount: item.breakdown.spofCount,
     noSupplierCount: item.breakdown.noSupplierCount,
+    longestRestoreWeeks: item.breakdown.restore.longestRestoreWeeks,
     topDriverComponent: item.breakdown.topDriverComponent
   }));
 
   const criticalNodes = data.suppliers.map((supplier) => ({
     supplierId: supplier.id,
     supplierName: supplier.name,
+    foreignExposure: supplier.foreignExposure,
     spofComponents: getSpofComponentsForSupplier(supplier.id, supplierActiveMap, data),
     affectedProgramsIfFails: getProgramsImpactedIfSupplierFails(supplier.id, supplierActiveMap, data).map(
       (program) => program.name
@@ -337,8 +476,8 @@ export function computePortfolioSummary(
 
   criticalNodes.sort((a, b) => {
     return (
+      criticalityScore(b) - criticalityScore(a) ||
       b.affectedProgramsIfFails.length - a.affectedProgramsIfFails.length ||
-      b.spofComponents.length - a.spofComponents.length ||
       a.supplierName.localeCompare(b.supplierName)
     );
   });
@@ -348,7 +487,8 @@ export function computePortfolioSummary(
     programsAtRisk,
     totalNoSupplierComponents,
     totalSpofComponents,
-    topCriticalSupplier: computeTopCriticalSupplier(supplierActiveMap, data),
+    adversaryLinkedSoleSources,
+    topCriticalSupplier: toTopCriticalSupplier(criticalNodes),
     programRows,
     criticalNodes
   };
@@ -389,6 +529,26 @@ export function getSupplierImpactSummary(
     impactedPrograms: new Set(programIds).size,
     impactedComponents: uniqueComponentIds.length
   };
+}
+
+export function formatExposureLabel(exposure: ForeignExposure): string {
+  if (exposure === 'ADVERSARY_LINKED') {
+    return 'Adversary-linked';
+  }
+  if (exposure === 'ALLIED') {
+    return 'Allied';
+  }
+  return 'Domestic';
+}
+
+export function formatRestoreWeeks(weeks: number | null): string {
+  if (weeks === null) {
+    return 'No known path';
+  }
+  if (weeks === 0) {
+    return 'Restored';
+  }
+  return `${weeks} wks`;
 }
 
 export function formatStatusLabel(status: ComponentStatus): string {

@@ -17,6 +17,7 @@
       "id": "s1",
       "name": "Arcturus Avionics",
       "location": "Huntsville, AL",
+      "foreignExposure": "DOMESTIC",
       "riskScore": 42,
       "isActive": true
     },
@@ -24,6 +25,7 @@
       "id": "s2",
       "name": "Blueforge Systems",
       "location": "Phoenix, AZ",
+      "foreignExposure": "DOMESTIC",
       "riskScore": 31,
       "isActive": true
     },
@@ -31,6 +33,7 @@
       "id": "s3",
       "name": "Cobalt Dynamics",
       "location": "Dayton, OH",
+      "foreignExposure": "ADVERSARY_LINKED",
       "riskScore": 58,
       "isActive": true
     },
@@ -38,13 +41,15 @@
       "id": "s4",
       "name": "Delta Relay Works",
       "location": "San Diego, CA",
+      "foreignExposure": "DOMESTIC",
       "riskScore": 27,
-      "isActive": false
+      "isActive": true
     },
     {
       "id": "s5",
       "name": "Everline Microfab",
       "location": "Austin, TX",
+      "foreignExposure": "DOMESTIC",
       "riskScore": 46,
       "isActive": true
     },
@@ -52,8 +57,17 @@
       "id": "s6",
       "name": "Frontier Composites",
       "location": "Wichita, KS",
+      "foreignExposure": "DOMESTIC",
       "riskScore": 22,
       "isActive": true
+    },
+    {
+      "id": "s7",
+      "name": "Halden Precision",
+      "location": "Trondheim, NO",
+      "foreignExposure": "ALLIED",
+      "riskScore": 35,
+      "isActive": false
     }
   ],
   "programComponentLinks": [
@@ -72,18 +86,20 @@
     { "programId": "p3", "componentId": "c6" }
   ],
   "componentSupplierLinks": [
-    { "componentId": "c1", "supplierId": "s1" },
-    { "componentId": "c1", "supplierId": "s2" },
+    { "componentId": "c1", "supplierId": "s1", "qualificationWeeks": 26 },
+    { "componentId": "c1", "supplierId": "s2", "qualificationWeeks": 32 },
 
-    { "componentId": "c2", "supplierId": "s3" },
+    { "componentId": "c2", "supplierId": "s3", "qualificationWeeks": 40 },
+    { "componentId": "c2", "supplierId": "s7", "qualificationWeeks": 64 },
 
-    { "componentId": "c3", "supplierId": "s2" },
-    { "componentId": "c3", "supplierId": "s4" },
+    { "componentId": "c3", "supplierId": "s2", "qualificationWeeks": 18 },
+    { "componentId": "c3", "supplierId": "s4", "qualificationWeeks": 12 },
 
-    { "componentId": "c4", "supplierId": "s5" },
+    { "componentId": "c4", "supplierId": "s5", "qualificationWeeks": 34 },
 
-    { "componentId": "c5", "supplierId": "s1" },
+    { "componentId": "c5", "supplierId": "s1", "qualificationWeeks": 52 },
 
-    { "componentId": "c6", "supplierId": "s6" }
+    { "componentId": "c6", "supplierId": "s6", "qualificationWeeks": 8 },
+    { "componentId": "c6", "supplierId": "s7", "qualificationWeeks": 10 }
   ]
 }
