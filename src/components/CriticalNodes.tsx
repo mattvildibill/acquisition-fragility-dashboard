@@ -19,7 +19,7 @@ export function CriticalNodes({ nodes, data }: CriticalNodesProps): JSX.Element 
       <h2>Critical Nodes</h2>
       <p className="muted">Suppliers ranked by potential program impact if they fail.</p>
       <div className="table-scroll">
-        <table className="data-table clickable-rows">
+        <table className="data-table clickable-rows compact-table">
           <thead>
             <tr>
               <th>Supplier</th>
@@ -51,9 +51,11 @@ export function CriticalNodes({ nodes, data }: CriticalNodesProps): JSX.Element 
 
       {selectedNode ? (
         <div className="critical-detail">
-          <h3>{selectedNode.supplierName}</h3>
-          <p className="muted">
-            {data.suppliers.find((supplier) => supplier.id === selectedNode.supplierId)?.location}
+          <p className="critical-detail-heading">
+            <strong>{selectedNode.supplierName}</strong>
+            <span className="muted">
+              {data.suppliers.find((supplier) => supplier.id === selectedNode.supplierId)?.location}
+            </span>
           </p>
           <div className="detail-columns">
             <div>

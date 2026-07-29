@@ -40,7 +40,12 @@ export function SupplierPanel({ suppliers, supplierActiveMap, onToggleSupplier }
               </div>
               <div className="supplier-actions">
                 <span className={`status-pill ${status ? 'active' : 'inactive'}`}>{status ? 'Active' : 'Inactive'}</span>
-                <button onClick={() => onToggleSupplier(supplier.id)}>{status ? 'Deactivate' : 'Activate'}</button>
+                <button
+                  className={`toggle-button ${status ? 'toggle-button-deactivate' : 'toggle-button-activate'}`}
+                  onClick={() => onToggleSupplier(supplier.id)}
+                >
+                  {status ? 'Deactivate' : 'Activate'}
+                </button>
               </div>
             </div>
           );

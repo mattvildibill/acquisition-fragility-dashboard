@@ -23,8 +23,15 @@ export function FullModelSection({
   adversaryLinkedSoleSources
 }: FullModelSectionProps): JSX.Element {
   return (
-    <details className="full-model">
-      <summary>See the full model — dependency graph and supplier ranking</summary>
+    <details className="full-model" open>
+      <summary className="full-model-summary">
+        <span className="full-model-summary-text">
+          <span className="full-model-eyebrow">Full model</span>
+          <strong className="full-model-title">Dependency graph &amp; supplier rankings</strong>
+          <span className="muted full-model-subtitle">The detailed breakdown behind the summary above</span>
+        </span>
+        <span className="full-model-chevron" aria-hidden="true" />
+      </summary>
       <div className="full-model-body">
         {adversaryLinkedSoleSources.length > 0 ? (
           <p className="exposure-callout">
