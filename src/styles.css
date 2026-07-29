@@ -149,6 +149,9 @@ select {
 .supplier-list {
   display: grid;
   gap: 0.5rem;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 0.3rem;
 }
 
 .supplier-row {
@@ -779,6 +782,11 @@ select {
 
   .score-tile {
     flex: 1 1 45%;
+  }
+
+  .supplier-list {
+    max-height: none;
+    overflow-y: visible;
   }
 
   .dependency-grid {
