@@ -84,6 +84,22 @@
       "foreignExposure": "DOMESTIC",
       "riskScore": 30,
       "isActive": false
+    },
+    {
+      "id": "s10",
+      "name": "Solace Inertial Systems",
+      "location": "Colorado Springs, CO",
+      "foreignExposure": "DOMESTIC",
+      "riskScore": 33,
+      "isActive": false
+    },
+    {
+      "id": "s11",
+      "name": "Pinehurst Optronics",
+      "location": "Melbourne, FL",
+      "foreignExposure": "DOMESTIC",
+      "riskScore": 28,
+      "isActive": false
     }
   ],
   "programComponentLinks": [
@@ -104,12 +120,14 @@
   "componentSupplierLinks": [
     { "componentId": "c1", "supplierId": "s1", "qualificationWeeks": 26 },
     { "componentId": "c1", "supplierId": "s2", "qualificationWeeks": 32 },
+    { "componentId": "c1", "supplierId": "s10", "qualificationWeeks": 60 },
 
     { "componentId": "c2", "supplierId": "s3", "qualificationWeeks": 40 },
     { "componentId": "c2", "supplierId": "s7", "qualificationWeeks": 64 },
 
     { "componentId": "c3", "supplierId": "s2", "qualificationWeeks": 18 },
     { "componentId": "c3", "supplierId": "s4", "qualificationWeeks": 12 },
+    { "componentId": "c3", "supplierId": "s11", "qualificationWeeks": 26 },
 
     { "componentId": "c4", "supplierId": "s5", "qualificationWeeks": 34 },
     { "componentId": "c4", "supplierId": "s9", "qualificationWeeks": 22 },
