@@ -121,9 +121,9 @@ export interface PortfolioSummary {
   totalNoSupplierComponents: number;
   totalSpofComponents: number;
   /**
-   * Tracked and reported separately from the health score on purpose. See
-   * DESIGN-NOTES.md — folding a compliance signal into a capacity score makes
-   * both numbers harder to act on.
+   * Tracked and reported separately from the health score on purpose: folding an
+   * ownership signal into a capacity score makes both numbers harder to act on.
+   * Reasoning in the README.
    */
   adversaryLinkedSoleSources: string[];
   topCriticalSupplier: {

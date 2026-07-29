@@ -7,13 +7,20 @@ export function DemoIntro(): JSX.Element {
       </div>
 
       <p className="muted">
-        I built this as a weekend prototype to show product thinking and front-end execution for an acquisition-risk workflow. The
-        programs, components, and suppliers here are sample records for demo purposes.
+        Programs depend on components, components are sourced from suppliers. This traces that graph to find where a single
+        supplier failure turns into a program that stops — and how long it stays stopped. Every program, part, and vendor below
+        is invented.
       </p>
 
       <div className="demo-intro-points">
-        <p><strong>What to look for:</strong> single points of failure, no-supplier gaps, and how those risks roll up into program health.</p>
-        <p><strong>Try this:</strong> pick a program, toggle a supplier, and watch the baseline vs current impact update.</p>
+        <p>
+          <strong>Try this:</strong> deactivate Cobalt Dynamics, the sole source for the Secure RF Modem, then open Aegis
+          Communications Node.
+        </p>
+        <p>
+          <strong>What happens:</strong> two programs drop below the at-risk line, and the only qualified alternate is 64 weeks
+          out.
+        </p>
       </div>
     </section>
   );

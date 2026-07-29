@@ -1,147 +1,105 @@
-# 🚀 Acquisition Fragility Dashboard
+# Acquisition Fragility Dashboard
 
-**I built this prototype to demonstrate how I would approach building decision-support software for defense acquisition teams.**
+A small tool for one question: **if a supplier goes down, which programs stop, and how long are they stopped for?**
 
-The goal: translate supplier-level risk into clear, explainable program-level fragility insight — and make it interactive, transparent, and immediately actionable.
+Supplier risk usually lives in a spreadsheet — a list of vendors with a risk score next to each. That tells you a vendor looks shaky. It doesn't tell you that the shaky vendor is the only qualified source for a part that three programs depend on, or that the nearest alternate is 64 weeks of qualification away. This models the dependency graph so you can ask the second question.
 
-This project reflects how I think about complex, mission-critical systems: structured data models, explicit risk logic, and user-centered decision workflows.
+![Program detail with a supplier taken offline](docs/screenshot.png)
 
----
-
-## 🎯 Why I Built This
-
-In acquisition environments, supplier risk is often tracked in isolation — spreadsheets, static reports, disconnected tools.
-
-What’s harder to answer:
-
-- Which programs are truly fragile right now?
-- Where do we have hidden single points of failure?
-- What happens if Supplier X becomes unavailable?
-- How do we justify mitigation priorities with defensible logic?
-
-This prototype is my answer to that problem.
-
-It demonstrates how a lightweight, explainable analytics tool could help program offices move from raw supplier data to actionable fragility insight.
-
----
-
-## 🔍 What This Prototype Does
-
-- Models supplier → component → program dependencies
-- Identifies:
-  - **Single Points of Failure (SPOFs)**
-  - **Components with no active supplier**
-- Calculates a transparent **0–100 Program Health Score**
-- Shows exactly *why* a program’s score dropped
-- Enables interactive supplier failure simulation
-- Surfaces cascading impact across programs
-
-This is intentionally designed as a decision-support tool, not just a reporting dashboard.
-
----
-
-## 📊 Health Score Model (Explainable by Design)
-
-Each program receives a 0–100 score based on supplier concentration risk.
-
-### Scoring Logic
-
-- Start at **100**
-- For each required component:
-  - `2+ active suppliers` → no penalty  
-  - `1 active supplier (SPOF)` → subtract `45 × criticalityWeight`  
-  - `0 active suppliers` → subtract `90 × criticalityWeight`
-- Criticality weights:
-  - `LOW = 1.0`
-  - `MED = 1.5`
-  - `HIGH = 2.0`
-- Penalties are normalized across total program criticality
-- Final score clamped to `0–100`
-
-This model prioritizes:
-
-- High-criticality component failures  
-- True capability gaps (no supplier)  
-- Supplier concentration risk  
-
-The logic is fully transparent — no black-box modeling — because explainability matters in mission and acquisition environments.
-
----
-
-## 🧠 How I Think About the Problem
-
-This prototype reflects several principles I prioritize:
-
-### 1️⃣ Explainability Over Complexity  
-Risk scores should be defensible and easy to walk through in a review.
-
-### 2️⃣ Cascading Visibility  
-Supplier-level issues must roll up clearly into program-level impact.
-
-### 3️⃣ Scenario-Driven Insight  
-Decision-makers need to ask “what if?” and see impact instantly.
-
-### 4️⃣ Structured Data Modeling  
-Programs, components, suppliers, and relationships are treated as first-class entities — not flattened tables.
-
----
-
-## 📦 Seed Dataset
-
-The demo includes:
-
-- 3 programs  
-- 6 components  
-- 6 suppliers  
-- True baseline SPOFs  
-- Simulated “No Active Supplier” failure cases  
-
-Example scenarios:
-- Deactivating a secure RF supplier creates a full capability gap
-- Certain components operate as true SPOFs at baseline
-- Cascading supplier failures impact multiple programs simultaneously
-
----
-
-## 🏗️ Engineering Decisions
-
-To keep this focused and deployable:
-
-- Static JSON dataset (no backend required)
-- Pure TypeScript scoring logic
-- Deterministic, testable calculations
-- Single-page React app optimized for GitHub Pages
-- Clear separation between data model, scoring engine, and UI
-
-This reflects how I scope and build high-signal prototypes under constraints.
-
----
-
-## 🌱 How This Would Evolve in Production
-
-If integrated into a real acquisition environment, I would extend this with:
-
-- API-backed supplier and program data feeds
-- Scenario save / compare workflows
-- Time-series supplier availability tracking
-- Lead time and capacity weighting
-- Role-based access controls and audit logs
-- Portfolio-level risk heatmaps
-- Executive-ready reporting outputs
-
----
-
-## 🛠️ Tech Stack
-
-- React  
-- TypeScript  
-- Vite  
-- Static-site compatible (GitHub Pages)  
-
----
-
-## 🚀 Run Locally
+## Try it
 
 ```bash
 npm install
 npm run dev
+```
+
+The 30-second version, using the seeded demo data:
+
+1. **Baseline.** Portfolio health sits at 72 and no program is below the 60 at-risk line. Risk Overview flags the Secure RF Modem as sole-sourced to Cobalt Dynamics — which is adversary-linked.
+2. **Deactivate Cobalt Dynamics** in the supplier panel on the left.
+3. Two programs fall below the line: Aegis Communications Node 71 → 55, Falcon Precision Munition 65 → 52. The Secure RF Modem now has no active supplier at all.
+4. **Select Aegis.** The restore banner reads **64 weeks** — the only qualified alternate on file is a Norwegian supplier, and that's the qualification lead time.
+
+A vendor risk list would have shown Cobalt Dynamics at 58/100 and stopped there. The 64 weeks is the number that actually changes what you do about it.
+
+## What it models
+
+Three entity types and two link tables, kept as an explicit graph rather than a flattened join:
+
+```
+Program  --requires-->  Component  --sourced from-->  Supplier
+```
+
+Each component gets a status from how many of its suppliers are currently producing:
+
+| Active suppliers | Status | Meaning |
+| --- | --- | --- |
+| 2+ | Healthy | Has redundancy |
+| 1 | SPOF | Delivering, but one failure from a gap |
+| 0 | No supplier | Capability gap — the line stops |
+
+**Qualification lead time** lives on the component–supplier link, not on the supplier. Qualification is per-part: the same vendor can be a drop-in for one board and an 18-month first-article effort for another. That's what makes a restore estimate possible.
+
+**Ownership exposure** (domestic / allied / adversary-linked) is tracked but deliberately kept *out* of the health score. See below.
+
+## The score
+
+Each program starts at 100 and loses weighted penalties:
+
+- SPOF component: `45 × criticality weight`
+- No supplier: `90 × criticality weight`
+- Criticality weights: LOW 1.0, MED 1.5, HIGH 2.0
+- Total penalty is normalised by the program's total criticality weight, so a 4-component program and a 12-component program are comparable
+
+Every number on screen traces back to a specific component and a specific supplier. There's no fitted model here, which is the point — in a review, "why did this drop 16 points" needs an answer you can say out loud.
+
+### Two design calls worth explaining
+
+**Restore time only counts components at zero active suppliers.** My first version included SPOFs, and the headline number never moved — almost everything is a SPOF at baseline, so the estimate was pinned to the worst qualification lead time in the dataset no matter what you did. A SPOF is fragile but still delivering. A gap is what stops a line.
+
+**Ownership exposure is not in the score.** It's tempting to add a penalty and get one number. But second-sourcing fixes availability and does nothing about who owns the vendor — they're different problems with different remedies and different timelines. Rolling them together produces a score that goes down for two unrelated reasons and tells you nothing about which lever to pull. Adversary-linked sole sources get their own counter instead.
+
+## What's wrong with it
+
+Being specific, because most of this is load-bearing if anyone tried to use it:
+
+- **The score floor is 10, not 0.** Penalties are normalised by total weight and the worst per-component penalty is 90, so a program with every component stranded scores 10. There's a test pinning this. A real version should rescale.
+- **The constants are invented.** 45, 90, and the 1.0/1.5/2.0 weights are my judgement, not calibration. They produce sensible orderings on this dataset; I have no evidence they're right in general. The 2× weight on blast radius in the critical-node ranking is the same story.
+- **Supplier state is binary.** Real disruption is partial and time-phased — reduced capacity, allocation, a six-month lead time stretch. On/off is a coarse approximation, and it means the tool can't represent the most common real case.
+- **No sub-tier visibility.** Every real single point of failure I've read about lives two or three tiers down, at a foundry or a specialty alloy mill that no prime has on a diagram. This models tier one only, which is the easy part.
+- **Restore assumes gaps close in parallel** and that qualification is the only constraint. No engineering capacity, no tooling, no funding line.
+- **Ownership exposure is an enum someone typed into a JSON file.** The real version of that field is an entity-resolution problem over corporate hierarchies, and it's harder than everything else here combined.
+- **Scenarios are localStorage only.** Share links encode state in the URL, which works but breaks if the dataset changes underneath.
+
+## If it had real data
+
+The model is the easy half. What would make it useful is the ingest: contract and obligation history to find who actually delivers a part, corporate hierarchy resolution for the ownership question, and sub-tier discovery to get past tier one. Qualification lead times would come from program offices rather than from me making them up.
+
+The scoring engine is deliberately isolated in `src/lib/scoring.ts` with the dataset behind a single import, so swapping the static JSON for an API is a small change. That was the one piece of architecture I bothered with.
+
+## Tests
+
+```bash
+npm test
+```
+
+31 tests over the scoring engine and the share-link encoding. A few run against the demo dataset specifically to keep the walkthrough above honest — if I change a supplier and the numbers in this README go stale, those fail.
+
+Writing them turned up two real bugs: a supplier knocked offline by a scenario was being recommended as its own replacement, and the "top critical supplier" callout could name a different vendor than the top row of the table right below it. Both are fixed; both have tests.
+
+The React components aren't covered. For a project this size, a DOM test environment to assert on markup that changes every time I move a panel wasn't worth the maintenance.
+
+## Stack
+
+React, TypeScript, Vite. No component library, no state management library, no backend — the whole thing is a static build.
+
+```
+src/lib/scoring.ts     scoring engine, no React imports
+src/data/              types and the seeded dataset
+src/components/        presentational pieces
+src/pages/             the two main panels
+```
+
+## Data
+
+Everything in `src/data/dataset.json` is synthetic. Program names, suppliers, and lead times are invented to exercise the model — three programs, six components, seven suppliers, with a couple of scenarios worth clicking through. Nothing here is derived from real programs or real vendors.
