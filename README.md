@@ -1,5 +1,7 @@
 # Acquisition Fragility Dashboard
 
+**[Live demo →](https://mattvildibill.github.io/acquisition-fragility-dashboard/)**
+
 A small tool for one question: **if a supplier goes down, which programs stop, and how long are they stopped for?**
 
 Supplier risk usually lives in a spreadsheet — a list of vendors with a risk score next to each. That tells you a vendor looks shaky. It doesn't tell you that the shaky vendor is the only qualified source for a part that three programs depend on, or that the nearest alternate is 64 weeks of qualification away. This models the dependency graph so you can ask the second question.
