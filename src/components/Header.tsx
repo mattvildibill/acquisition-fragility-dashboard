@@ -2,7 +2,7 @@ interface HeaderProps {
   isBaseline: boolean;
   onReset: () => void;
   onCopyLink: () => void;
-  copyState: 'idle' | 'copied';
+  copyState: 'idle' | 'copied' | 'failed';
 }
 
 export function Header({ isBaseline, onReset, onCopyLink, copyState }: HeaderProps): JSX.Element {
@@ -10,10 +10,11 @@ export function Header({ isBaseline, onReset, onCopyLink, copyState }: HeaderPro
     <header className="app-header card">
       <div className="app-header-top">
         <div className="app-header-title">
+          <span className="project-eyebrow">Acquisition decision lab / 01</span>
           <h1>Acquisition Fragility Dashboard</h1>
-          <span className="app-header-badge">Live demo · synthetic data</span>
+          <span className="app-header-badge">Interactive model · synthetic data</span>
         </div>
-        <div className="app-header-actions">
+        <div className="app-header-actions" aria-live="polite">
           <button type="button" onClick={onCopyLink} className="ghost-button">
             {copyState === 'copied' ? 'Link copied' : 'Copy link to this scenario'}
           </button>

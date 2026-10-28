@@ -8,22 +8,17 @@ interface SupplierPanelProps {
 }
 
 export function SupplierPanel({ suppliers, supplierActiveMap, onToggleSupplier }: SupplierPanelProps): JSX.Element {
-  // Active suppliers first so the ones you're most likely to click - the ones
-  // still delivering - aren't buried below whatever's already offline.
-  const ordered = [...suppliers].sort((a, b) => {
-    const aActive = supplierActiveMap[a.id] ?? a.isActive;
-    const bActive = supplierActiveMap[b.id] ?? b.isActive;
-    if (aActive === bActive) {
-      return a.name.localeCompare(b.name);
-    }
-    return aActive ? -1 : 1;
-  });
+  // Baseline producers first; keep rows in place when toggled so focus and
+  // scroll position stay useful when comparing a failure with its reversal.
+  const ordered = [...suppliers].sort((a, b) =>
+    Number(b.isActive) - Number(a.isActive) || a.name.localeCompare(b.name)
+  );
 
   return (
     <section className="card supplier-panel">
-      <h2>Suppliers</h2>
-      <p className="muted">Click a supplier to take it offline and see what breaks.</p>
-      <div className="supplier-list">
+      <h2>1. Set a supplier scenario</h2>
+      <p className="muted">Take a producer offline, then inspect the program impact. Activating a reserve assumes its qualification is complete.</p>
+      <div className="supplier-list" tabIndex={0} role="region" aria-label="Supplier scenario controls">
         {ordered.map((supplier) => {
           const status = supplierActiveMap[supplier.id] ?? supplier.isActive;
 
@@ -41,6 +36,8 @@ export function SupplierPanel({ suppliers, supplierActiveMap, onToggleSupplier }
               <div className="supplier-actions">
                 <span className={`status-pill ${status ? 'active' : 'inactive'}`}>{status ? 'Active' : 'Inactive'}</span>
                 <button
+                  type="button"
+                  aria-label={`${status ? 'Deactivate' : 'Activate'} ${supplier.name}`}
                   className={`toggle-button ${status ? 'toggle-button-deactivate' : 'toggle-button-activate'}`}
                   onClick={() => onToggleSupplier(supplier.id)}
                 >

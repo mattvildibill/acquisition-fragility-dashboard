@@ -133,11 +133,24 @@ describe('restore outlook', () => {
     expect(restore.drivingComponent).toBe('K Med');
   });
 
-  it('takes the slowest gap, not the sum of them', () => {
-    // Gaps close in parallel; the program is back when the last one lands.
+  it('uses the slowest parallel qualification when every gap can close', () => {
+    const recoverable: Dataset = {
+      ...fixture,
+      componentSupplierLinks: [...fixture.componentSupplierLinks,
+        { componentId: 'k_low', supplierId: 'v3', qualificationWeeks: 24 }]
+    };
+    const { restore } = computeProgramBreakdown('pa', withOffline('v1', 'v4'), recoverable);
+    expect(restore.gapComponents).toBe(2);
+    expect(restore.longestRestoreWeeks).toBe(24);
+    expect(restore.unresolvableComponents).toEqual([]);
+  });
+
+  it('does not promise recovery while any gap has no alternate', () => {
+    // One recoverable gap cannot hide another with no recovery path.
     const twoGaps = computeProgramBreakdown('pa', withOffline('v4', 'v1'), fixture).restore;
     expect(twoGaps.gapComponents).toBe(2);
-    expect(twoGaps.longestRestoreWeeks).toBe(16);
+    expect(twoGaps.longestRestoreWeeks).toBeNull();
+    expect(twoGaps.unresolvableComponents).toContain('K Low');
   });
 
   it('does not offer the supplier that just failed as its own replacement', () => {

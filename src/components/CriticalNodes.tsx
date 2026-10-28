@@ -18,7 +18,8 @@ export function CriticalNodes({ nodes, data }: CriticalNodesProps): JSX.Element 
     <section className="card">
       <h2>Critical Nodes</h2>
       <p className="muted">Suppliers ranked by potential program impact if they fail.</p>
-      <div className="table-scroll">
+      <p className="muted scroll-hint">Scroll the table sideways for program impact.</p>
+      <div className="table-scroll" tabIndex={0} role="region" aria-label="Supplier ranking">
         <table className="data-table clickable-rows compact-table">
           <thead>
             <tr>
@@ -35,7 +36,7 @@ export function CriticalNodes({ nodes, data }: CriticalNodesProps): JSX.Element 
                 className={selectedNode?.supplierId === node.supplierId ? 'selected-row' : ''}
                 onClick={() => setSelectedSupplierId(node.supplierId)}
               >
-                <td>{node.supplierName}</td>
+                <td><button type="button" className="table-button" aria-pressed={selectedNode?.supplierId === node.supplierId} onClick={() => setSelectedSupplierId(node.supplierId)}>{node.supplierName}</button></td>
                 <td>
                   <span className={`exposure-tag exposure-${node.foreignExposure.toLowerCase()}`}>
                     {formatExposureLabel(node.foreignExposure)}
