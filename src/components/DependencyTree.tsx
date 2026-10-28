@@ -90,7 +90,7 @@ export function DependencyTree({ programId, supplierActiveMap, data }: Dependenc
             checked={showAllLinks}
             onChange={(event) => setShowAllLinks(event.target.checked)}
           />
-          Show all component links
+          Emphasize all components
         </label>
       </div>
 
@@ -106,7 +106,7 @@ export function DependencyTree({ programId, supplierActiveMap, data }: Dependenc
           <h4>Program</h4>
           <article className="dep-node dep-program-node">
             <strong>{program.name}</strong>
-            <small className="muted">Selected program baseline</small>
+            <small className="muted">Current scenario</small>
           </article>
         </section>
 
@@ -121,6 +121,7 @@ export function DependencyTree({ programId, supplierActiveMap, data }: Dependenc
                 <button
                   key={entry.component.id}
                   type="button"
+                  aria-pressed={active}
                   className={`dep-node dep-component-node ${active ? 'active' : ''} ${faded ? 'muted-node' : ''}`}
                   onClick={() => setSelectedComponentId(entry.component.id)}
                 >
@@ -135,7 +136,7 @@ export function DependencyTree({ programId, supplierActiveMap, data }: Dependenc
                     </small>
                     {entry.status !== 'HEALTHY' ? (
                       <small className={entry.recoveryWeeks === null ? 'restore-stranded' : 'muted'}>
-                        Restore: {formatRestoreWeeks(entry.recoveryWeeks)}
+                        Qualification: {formatRestoreWeeks(entry.recoveryWeeks)}
                       </small>
                     ) : null}
                   </div>
@@ -194,7 +195,7 @@ export function DependencyTree({ programId, supplierActiveMap, data }: Dependenc
             : 'supported by multiple active suppliers'}
           {selectedComponentStatus.status !== 'HEALTHY' ? (
             <>
-              {' '}— restore estimate:{' '}
+              {' '}— qualification estimate:{' '}
               <strong>
                 {formatRestoreWeeks(
                   componentEntries.find((entry) => entry.component.id === selectedComponent?.id)?.recoveryWeeks ??

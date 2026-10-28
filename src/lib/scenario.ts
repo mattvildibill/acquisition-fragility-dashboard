@@ -6,26 +6,24 @@ export function encodeScenarioMap(supplierActiveMap: SupplierActiveMap, supplier
     .join(',');
 }
 
-export function decodeScenarioMap(rawValue: string, supplierIds: string[]): SupplierActiveMap {
-  const defaultMap = supplierIds.reduce<SupplierActiveMap>((acc, id) => {
-    acc[id] = false;
-    return acc;
-  }, {});
-
-  const parts = rawValue.split(',').filter(Boolean);
-  parts.forEach((part) => {
-    const [rawId, rawState] = part.split(':');
-    if (!rawId || !rawState) {
-      return;
+// A share link is a complete snapshot. Reject stale or damaged snapshots rather
+// than quietly turning missing suppliers off and inventing a disruption.
+export function decodeScenarioMap(rawValue: string, supplierIds: string[]): SupplierActiveMap | null {
+  const entries = rawValue.split(',');
+  if (entries.length !== supplierIds.length) return null;
+  const result: SupplierActiveMap = {};
+  try {
+    for (const entry of entries) {
+      const parts = entry.split(':');
+      if (parts.length !== 2 || !['0', '1'].includes(parts[1])) return null;
+      const id = decodeURIComponent(parts[0]);
+      if (!supplierIds.includes(id) || Object.prototype.hasOwnProperty.call(result, id)) return null;
+      Object.defineProperty(result, id, { value: parts[1] === '1', enumerable: true });
     }
-    const id = decodeURIComponent(rawId);
-    if (!supplierIds.includes(id)) {
-      return;
-    }
-    defaultMap[id] = rawState === '1';
-  });
-
-  return defaultMap;
+  } catch {
+    return null;
+  }
+  return result;
 }
 
 export function scenarioMapFromUrl(supplierIds: string[]): SupplierActiveMap | null {

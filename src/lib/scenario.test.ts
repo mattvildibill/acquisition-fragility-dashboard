@@ -1,42 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { decodeScenarioMap, encodeScenarioMap } from './scenario';
-
-/**
- * Only the pure encode/decode pair is covered here. The save/load helpers talk
- * to localStorage and the URL bar, and pulling in a DOM environment to test
- * three lines of window access was not worth it for a project this size.
- */
 const supplierIds = ['s1', 's2', 's3'];
 
 describe('scenario share links', () => {
-  it('round-trips a scenario', () => {
-    const original = { s1: true, s2: false, s3: true };
-    expect(decodeScenarioMap(encodeScenarioMap(original, supplierIds), supplierIds)).toEqual(original);
+  it('round-trips every supplier state', () => {
+    for (let mask = 0; mask < 8; mask++) {
+      const map = Object.fromEntries(supplierIds.map((id, i) => [id, Boolean(mask & (1 << i))]));
+      expect(decodeScenarioMap(encodeScenarioMap(map, supplierIds), supplierIds)).toEqual(map);
+    }
   });
-
-  it('defaults unknown suppliers to offline rather than guessing', () => {
-    expect(decodeScenarioMap('s1:1', supplierIds)).toEqual({ s1: true, s2: false, s3: false });
-  });
-
-  it('ignores ids that are not in the current dataset', () => {
-    // Otherwise a link shared from an older dataset injects phantom suppliers.
-    expect(decodeScenarioMap('s1:1,ghost:1', supplierIds)).toEqual({
-      s1: true,
-      s2: false,
-      s3: false
+  it.each(['s1:1', 's1:1,s2:0,ghost:1', 's1:1,,s2', '%:1,s2:0,s3:1',
+    's1:1,s1:0,s3:1', 's1:yes,s2:0,s3:1', 's1:1:0,s2:0,s3:1', ''])
+    ('rejects incomplete or malformed snapshot %s', (raw) => {
+      expect(decodeScenarioMap(raw, supplierIds)).toBeNull();
     });
-  });
-
-  it('survives a truncated or malformed parameter', () => {
-    expect(decodeScenarioMap('s1:1,,s2', supplierIds)).toEqual({
-      s1: true,
-      s2: false,
-      s3: false
-    });
-  });
-
-  it('produces a stable encoding for the same map', () => {
-    const map = { s1: false, s2: true, s3: false };
-    expect(encodeScenarioMap(map, supplierIds)).toBe(encodeScenarioMap(map, supplierIds));
+  it('round-trips encoded punctuation in IDs', () => {
+    const ids = ['a:b,c%'];
+    expect(decodeScenarioMap(encodeScenarioMap({ [ids[0]]: true }, ids), ids)).toEqual({ [ids[0]]: true });
   });
 });

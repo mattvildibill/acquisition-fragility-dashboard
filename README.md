@@ -11,7 +11,7 @@ Supplier risk usually lives in a spreadsheet — a list of vendors with a risk s
 ## Try it
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -21,7 +21,7 @@ The 30-second version, using the seeded demo data:
 2. **Deactivate Cobalt Dynamics** in the supplier list on the left — it's the sole source for the Secure RF Modem, and it's tagged adversary-linked.
 3. Two tabs pick up a red dot: Aegis Communications Node 71 → 55, Falcon Precision Munition 65 → 52. The Secure RF Modem now has no active supplier at all.
 4. **Click the Aegis tab.** The restore banner reads **64 weeks** — the only qualified alternate on file is a Norwegian supplier, and that's the qualification lead time.
-5. Open **"See the full model"** for the dependency graph and the supplier ranking table, plus the adversary-linked-sole-source callout, kept out of the main view so the first screen stays to the point.
+5. Scroll to **"Dependency graph & supplier rankings"** for the dependency map, supplier ranking table, and ownership-exposure callout. This section starts expanded and can be collapsed.
 
 A vendor risk list would have shown Cobalt Dynamics at 58/100 and stopped there. The 64 weeks is the number that actually changes what you do about it.
 
@@ -72,12 +72,14 @@ Being specific, because most of this is load-bearing if anyone tried to use it:
 - **No sub-tier visibility.** Every real single point of failure I've read about lives two or three tiers down, at a foundry or a specialty alloy mill that no prime has on a diagram. This models tier one only, which is the easy part.
 - **Restore assumes gaps close in parallel** and that qualification is the only constraint. No engineering capacity, no tooling, no funding line.
 - **Ownership exposure is an enum someone typed into a JSON file.** The real version of that field is an entity-resolution problem over corporate hierarchies, and it's harder than everything else here combined.
-- **Scenarios aren't persisted server-side.** There's a "copy link to this scenario" button that encodes supplier state into the URL, which works for sharing one link but breaks if the dataset changes underneath it, and there's no way to name or list past scenarios.
+- **Scenarios aren't persisted server-side.** There's a "copy link to this scenario" button that encodes supplier state into the URL, which works for sharing one link but breaks if the dataset changes underneath it, and there's no way to name or list past scenarios. Incomplete or malformed snapshots are rejected with a visible baseline fallback. The July layout simplification deliberately removed local save/load lists to keep the failure-to-impact interaction central.
 - **"No alternate on file" is real code with no reachable case in this dataset.** Every component now has at least one supplier sitting on the shelf, so deactivating everything you can — I checked, all six active suppliers at once — still resolves to a number everywhere. The path is exercised by a hand-built fixture in `scoring.test.ts`, not by anything you can click into here. A dataset with a genuinely sole-sourced, no-alternate part would need to reintroduce that gap on purpose.
 
 ## If it had real data
 
 The model is the easy half. What would make it useful is the ingest: contract and obligation history to find who actually delivers a part, corporate hierarchy resolution for the ownership question, and sub-tier discovery to get past tier one. Qualification lead times would come from program offices rather than from me making them up.
+
+Activating a reserve supplier is a what-if assumption that qualification has already finished; the app does not simulate time passing. A program with any gap that has no alternate has no complete recovery estimate, even if its other gaps have estimates.
 
 The scoring engine is deliberately isolated in `src/lib/scoring.ts` with the dataset behind a single import, so swapping the static JSON for an API is a small change. That was the one piece of architecture I bothered with.
 
@@ -87,11 +89,13 @@ The scoring engine is deliberately isolated in `src/lib/scoring.ts` with the dat
 npm test
 ```
 
-31 tests over the scoring engine and the share-link encoding. A few run against the demo dataset specifically to keep the walkthrough above honest — if I change a supplier and the numbers in this README go stale, those fail.
+37 tests over the scoring engine and the share-link encoding. A few run against the demo dataset specifically to keep the walkthrough above honest — if I change a supplier and the numbers in this README go stale, those fail.
 
 Writing them turned up two real bugs: a supplier knocked offline by a scenario was being recommended as its own replacement, and the "top critical supplier" callout could name a different vendor than the top row of the table right below it. Both are fixed; both have tests.
 
-The React components aren't covered. For a project this size, a DOM test environment to assert on markup that changes every time I move a panel wasn't worth the maintenance.
+To repeat the browser smoke check, run `npx playwright install chromium`, start `npm run preview -- --port 4180` after building, then run `npm run test:browser` in another terminal. Set `BASE_URL` to check another served build, or `BROWSER_EXECUTABLE_PATH` to use an existing Chromium installation. The smoke check includes axe WCAG A/AA rules; it does not deploy anything.
+
+The unit suite covers the model and share-link parser. The UI is checked separately in Chromium: failure and mitigation scenarios, reset, shared links, clipboard-denied fallback, keyboard controls and narrow layouts. It does not claim cross-browser or screen-reader certification.
 
 ## Stack
 
@@ -106,3 +110,11 @@ src/components/        everything else — panels, tabs, the dependency graph
 ## Data
 
 Everything in `src/data/dataset.json` is synthetic. Program names, suppliers, and lead times are invented to exercise the model — three programs, six components, eleven suppliers, with a couple of scenarios worth clicking through. Nothing here is derived from real programs or real vendors.
+
+## Hosting and scope
+
+Use Node 22.12+ (Node 22 LTS is used by CI). `npm run build` produces a static `dist/` directory. Relative asset paths support both a root subdomain on Vercel and the existing GitHub Pages project path. There are no environment secrets, API calls, accounts or backend to provision.
+
+For a Vercel project, use the Vite preset, build command `npm run build`, and output directory `dist`. Deployment and domain assignment are separate from this code change. The intended showcase is public but unlinked from the main portfolio. `noindex, nofollow` metadata and Vercel response headers discourage indexing; they are not access control.
+
+The review keeps the existing illustrative score constants and synthetic dataset. It adds no claims about real procurement programs, customers or operational outcomes. No export workflow is included.

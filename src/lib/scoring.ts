@@ -219,8 +219,8 @@ function computeRestoreOutlook(drivers: ProgramDriver[]): RestoreOutlook {
 
   return {
     gapComponents: gaps.length,
-    longestRestoreWeeks: slowest?.recoveryWeeks ?? null,
-    drivingComponent: slowest?.componentName ?? null,
+    longestRestoreWeeks: unresolvable.length > 0 ? null : slowest?.recoveryWeeks ?? null,
+    drivingComponent: unresolvable.length > 0 ? null : slowest?.componentName ?? null,
     unresolvableComponents: unresolvable.map((driver) => driver.componentName)
   };
 }
