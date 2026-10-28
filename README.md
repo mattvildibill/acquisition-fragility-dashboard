@@ -19,10 +19,10 @@ npm run dev
 
 The 30-second version, using the seeded demo data:
 
-1. **Baseline.** Portfolio health sits at 72 and none of the three program tabs show a red at-risk dot.
-2. **Deactivate Cobalt Dynamics** in the supplier list on the left — it's the sole source for the Secure RF Modem, and it's tagged adversary-linked.
-3. Two tabs pick up a red dot: Aegis Communications Node 71 → 55, Falcon Precision Munition 65 → 52. The Secure RF Modem now has no active supplier at all.
-4. **Click Aegis in the affected dependency path.** Compare baseline 71, disrupted 55, choice A 71 and choice B 84 in one ledger.
+1. **Baseline.** Portfolio health sits at 70 across five programs; Aegis is selected at 71.
+2. **Deactivate Cobalt Dynamics** using the supplier control — it's the sole source for the Secure RF Modem, and it's tagged adversary-linked.
+3. Two programs lose their modem source: Aegis Communications Node 71 → 55, Falcon Precision Munition 65 → 52. The Secure RF Modem now has no active supplier at all.
+4. **Read the Aegis comparison beside the map.** Compare baseline 71, disrupted 55, choice A 71 and choice B 84 in one ledger.
 5. **Read the tradeoff.** A qualifies Halden to close the modem gap. B also qualifies Meridian for power-module redundancy. Both have a synthetic 64-week qualification envelope, but the modem remains single-sourced in both. Open calculation evidence for every qualification link.
 
 ## Case study: recovery without false precision
@@ -31,7 +31,7 @@ The centerpiece follows a lost producer through component dependencies into prog
 
 Selection uses component ID order, then the shortest per-part reserve qualification with supplier-ID tie-breaking. Offline baseline producers are excluded. The existing model activates suppliers across every linked part, so the qualification envelope includes all those parts, even outside the selected program. All qualifications run in parallel with unlimited capacity. Scores show the state after that work completes, not a predicted state today. Unmet goals stay visible rather than receiving a fabricated recovery path.
 
-The visual hierarchy puts affected paths and a shared baseline/current/choice ledger first. Detailed scores, rankings and assumptions remain inspectable. Reserve suppliers are distinguished from producers taken offline. No cost data, real dates, backend, exports or saved scenario library were introduced.
+The permanent dependency map shows every component–supplier edge for the selected program, alongside a baseline/current/choice ledger on desktop. One supplier control and one program selector coordinate both panels. Selecting a component reveals every program sharing it. On phones a compact outcome strip appears immediately below the controls, followed by the full map and comparison; neither table requires sideways scrolling. Detailed scores and rankings open in a keyboard-accessible evidence dialog. Reserve suppliers are distinguished from producers taken offline. No cost data, real dates, backend, exports or saved scenario library were introduced.
 
 ## What it models
 
@@ -81,7 +81,7 @@ Being specific, because most of this is load-bearing if anyone tried to use it:
 - **Restore assumes gaps close in parallel** and that qualification is the only constraint. No engineering capacity, no tooling, no funding line.
 - **Ownership exposure is an enum someone typed into a JSON file.** The real version of that field is an entity-resolution problem over corporate hierarchies, and it's harder than everything else here combined.
 - **Scenarios aren't persisted server-side.** There's a "copy link to this scenario" button that encodes supplier state into the URL, which works for sharing one link but breaks if the dataset changes underneath it, and there's no way to name or list past scenarios. Incomplete or malformed snapshots are rejected with a visible baseline fallback. The July layout simplification deliberately removed local save/load lists to keep the failure-to-impact interaction central.
-- **"No alternate on file" is real code with no reachable case in this dataset.** Every component now has at least one supplier sitting on the shelf, so deactivating everything you can — I checked, all six active suppliers at once — still resolves to a number everywhere. The path is exercised by a hand-built fixture in `scoring.test.ts`, not by anything you can click into here. A dataset with a genuinely sole-sourced, no-alternate part would need to reintroduce that gap on purpose.
+- **Some recovery goals are deliberately unreachable.** The Radiation-Tolerant Controller has one producer and no reserve. The antenna has two producers but no reserve if both fail. The model exposes those gaps rather than inventing new suppliers.
 
 ## If it had real data
 
@@ -97,7 +97,7 @@ The scoring engine is deliberately isolated in `src/lib/scoring.ts` with the dat
 npm test
 ```
 
-46 tests over the scoring engine, recovery comparison and share-link encoding. A few run against the demo dataset specifically to keep the walkthrough above honest — if I change a supplier and the numbers in this README go stale, those fail.
+54 tests over the scoring engine, recovery comparison and share-link encoding. A few run against the demo dataset specifically to keep the walkthrough above honest — if I change a supplier and the numbers in this README go stale, those fail.
 
 Writing them turned up two real bugs: a supplier knocked offline by a scenario was being recommended as its own replacement, and the "top critical supplier" callout could name a different vendor than the top row of the table right below it. Both are fixed; both have tests.
 
@@ -112,12 +112,23 @@ React, TypeScript, Vite. No component library, no state management library, no b
 ```
 src/lib/scoring.ts     scoring engine, no React imports
 src/data/              types and the seeded dataset
-src/components/        everything else — panels, tabs, the dependency graph
+src/components/        controls, evidence dialog and the dependency graph
 ```
 
 ## Data
 
-Everything in `src/data/dataset.json` is synthetic. Program names, suppliers, and lead times are invented to exercise the model — three programs, six components, eleven suppliers, with a couple of scenarios worth clicking through. Nothing here is derived from real programs or real vendors.
+Everything in `src/data/dataset.json` is synthetic: five programs, ten components and fifteen suppliers. Names, qualification times and relationships are invented topology examples, not verified procurement or flight-system mappings. “Accurate” here means internally consistent and tested, not factual claims about real supply chains.
+
+The original three programs and every original entity/link remain unchanged. Two additions demonstrate different graph behavior:
+
+| Added program | Mapped components | Purpose |
+| --- | --- | --- |
+| Orbital Relay Demonstrator | Power Regulation Module, Precision Timing Module, Radiation-Tolerant Controller, Deployable Antenna Assembly | Shared supplier failure plus an unresolvable component gap |
+| Field Sensor Gateway | Thermal Imaging Core, Precision Timing Module, Sensor Interface Board | Shared timing dependency and a reserve whose activation helps two parts |
+
+Take Juniper Timing Labs offline: Orbital goes **65 → 39**, with recovery choices **52 / 61**, both retaining the controller gap. Field Sensor goes **70 → 50**, with both choices reaching **80** because the same reserve also supplies its interface board. Identical choices are shown honestly rather than forced into a fabricated tradeoff.
+
+`invariants.test.ts` checks unique entity IDs and edges, valid references, complete graph reachability and finite nonnegative qualification times, including deliberately broken fixtures. `topology.test.ts` independently pins affected programs, criticality-weighted penalties, incomplete recovery and shared-supplier effects. Existing Cobalt/Aegis tests still pass unchanged. Old share links with the earlier supplier count fail visibly to baseline instead of silently inventing a partial scenario.
 
 ## Hosting and scope
 

@@ -1,13 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
 import { dataset } from './data';
 import type { SupplierActiveMap } from './data/types';
-import { FullModelSection } from './components/FullModelSection';
+import { DependencyTree } from './components/DependencyTree';
+import { EvidenceDialog } from './components/EvidenceDialog';
 import { RecoveryWorkspace } from './components/RecoveryWorkspace';
 import { Header } from './components/Header';
-import { ProgramTabs } from './components/ProgramTabs';
 import { SupplierPanel } from './components/SupplierPanel';
-import { ProgramDetailPage } from './components/ProgramDetailPage';
 import { computePortfolioSummary, computeProgramBreakdown, createSupplierActiveMap } from './lib/scoring';
+import { compareRecovery } from './lib/recovery';
 import { buildScenarioShareUrl, clearScenarioFromUrl, scenarioMapFromUrl } from './lib/scenario';
 
 export default function App(): JSX.Element {
@@ -15,7 +15,7 @@ export default function App(): JSX.Element {
   const supplierIds = useMemo(() => dataset.suppliers.map((supplier) => supplier.id), []);
 
   const [supplierActiveMap, setSupplierActiveMap] = useState<SupplierActiveMap>(() => scenarioMapFromUrl(supplierIds) ?? baselineSupplierActiveMap);
-  const [selectedProgramId, setSelectedProgramId] = useState<string>(dataset.programs[0]?.id ?? '');
+  const [selectedProgramId, setSelectedProgramId] = useState<string>('p2');
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   const copyRequest = useRef(0);
@@ -34,6 +34,8 @@ export default function App(): JSX.Element {
     () => computeProgramBreakdown(selectedProgramId, baselineSupplierActiveMap, dataset).score,
     [selectedProgramId, baselineSupplierActiveMap]
   );
+
+  const comparison = useMemo(() => compareRecovery(selectedProgramId, supplierActiveMap, dataset), [selectedProgramId, supplierActiveMap]);
 
   const isBaselineScenario = useMemo(() => {
     return supplierIds.every((id) => (supplierActiveMap[id] ?? false) === (baselineSupplierActiveMap[id] ?? false));
@@ -81,40 +83,24 @@ export default function App(): JSX.Element {
         </label>
       ) : null}
 
-      <div className="fold-layout">
-        <SupplierPanel
-          suppliers={dataset.suppliers}
-          supplierActiveMap={supplierActiveMap}
-          onToggleSupplier={handleToggleSupplier}
-        />
-
-        <section className="impact-column">
-          <ProgramTabs
-            rows={currentSummary.programRows}
-            selectedProgramId={selectedProgramId}
-            onSelectProgram={setSelectedProgramId}
-          />
-          <RecoveryWorkspace data={dataset} supplierActiveMap={supplierActiveMap} programId={selectedProgramId} onSelectProgram={setSelectedProgramId} />
-          <details className="program-evidence" open><summary>Selected program score &amp; component evidence</summary>
-          <ProgramDetailPage
-            selectedProgramId={selectedProgramId}
-            data={dataset}
-            supplierActiveMap={supplierActiveMap}
-            baselineScore={baselineProgramScore}
-          />
-          </details>
-        </section>
+      <section className="decision-controls" aria-label="Scenario controls">
+        <SupplierPanel suppliers={dataset.suppliers} supplierActiveMap={supplierActiveMap} onToggleSupplier={handleToggleSupplier} />
+        <div className="program-control"><label htmlFor="program-picker">2. Inspect a program</label>
+          <select id="program-picker" value={selectedProgramId} onChange={e => setSelectedProgramId(e.target.value)}>
+            {currentSummary.programRows.map(p => <option key={p.programId} value={p.programId}>{p.programName}{p.noSupplierCount ? ` · ${p.noSupplierCount} supply gap(s)` : ''}</option>)}
+          </select><span className="control-note">{dataset.programs.length} synthetic programs · {dataset.components.length} components · {dataset.suppliers.length} suppliers</span>
+        </div>
+        <EvidenceDialog data={dataset} programId={selectedProgramId} supplierActiveMap={supplierActiveMap} baselineScore={baselineProgramScore} summary={currentSummary} />
+      </section>
+      <section className="mobile-outcome" aria-label="Quick outcome">
+        <strong>{comparison.current.noSupplierCount ? `${comparison.current.noSupplierCount} supply gap(s)` : 'Supply is flowing'} · {comparison.current.spofCount} with one source</strong>
+        <div><span>Now <b>{comparison.current.score}</b></span><span>After A <b>{comparison.closeGaps.breakdown.score}</b></span><span>After B <b>{comparison.harden.breakdown.score}</b></span></div>
+        <p>Health / 100, after synthetic qualification. <a href="#recovery-comparison">Compare choices ↓</a></p>
+      </section>
+      <div className="decision-workspace">
+        <DependencyTree programId={selectedProgramId} data={dataset} supplierActiveMap={supplierActiveMap} onSelectProgram={setSelectedProgramId} />
+        <RecoveryWorkspace data={dataset} supplierActiveMap={supplierActiveMap} programId={selectedProgramId} onSelectProgram={setSelectedProgramId} />
       </div>
-
-      <FullModelSection
-        selectedProgramId={selectedProgramId}
-        onSelectProgram={setSelectedProgramId}
-        programRows={currentSummary.programRows}
-        data={dataset}
-        supplierActiveMap={supplierActiveMap}
-        criticalNodes={currentSummary.criticalNodes}
-        adversaryLinkedSoleSources={currentSummary.adversaryLinkedSoleSources}
-      />
 
       <p className="muted portfolio-footnote">
         Portfolio average health: {currentSummary.averageHealthScore}
