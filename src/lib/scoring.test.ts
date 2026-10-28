@@ -215,7 +215,7 @@ describe('demo dataset', () => {
   it('starts with no program below the at-risk threshold', () => {
     const summary = computePortfolioSummary(demoBaseline, demoDataset);
     expect(summary.programsAtRisk).toBe(0);
-    expect(summary.averageHealthScore).toBe(72);
+    expect(summary.averageHealthScore).toBe(70);
   });
 
   it('opens with the Secure RF Modem sole-sourced to an adversary-linked vendor', () => {

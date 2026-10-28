@@ -24,14 +24,7 @@ export function Header({ isBaseline, onReset, onCopyLink, copyState }: HeaderPro
         </div>
       </div>
 
-      <p className="app-header-pitch">
-        Programs depend on components, components are sourced from suppliers. This traces that graph to show what
-        breaks if a supplier goes down. Compare recovery choices and the fragility each leaves behind.
-      </p>
-      <p className="app-header-hint">
-        <strong>Try it:</strong> turn off <strong>Cobalt Dynamics</strong> in the supplier list, then look at Aegis
-        Communications Node. Compare closing its gap with adding redundancy.
-      </p>
+      <p className="app-header-pitch">If one supplier stops, what breaks—and what could restore supply? Start with Cobalt, then compare the two recovery choices.</p>
     </header>
   );
 }
