@@ -162,14 +162,14 @@ export function DependencyTree({ programId, supplierActiveMap, data }: Dependenc
                 return (
                   <article
                     key={supplier.id}
-                    className={`dep-node dep-supplier-node ${isActive ? 'supplier-active' : 'supplier-inactive'}`}
+                    className={`dep-node dep-supplier-node ${isActive ? 'supplier-active' : supplier.isActive ? 'supplier-inactive' : 'supplier-reserve'}`}
                   >
-                    <ConnectorLink color={isActive ? '#4f8f68' : '#b56c6c'} />
+                    <ConnectorLink color={isActive ? '#4f8f68' : supplier.isActive ? '#b56c6c' : '#637d8a'} />
                     <div className="dep-node-content">
                       <div className="dep-node-title-row">
                         <strong>{supplier.name}</strong>
-                        <span className={`status-pill ${isActive ? 'active' : 'inactive'}`}>
-                          {isActive ? 'Active' : 'Inactive'}
+                        <span className={`status-pill ${isActive ? 'active' : supplier.isActive ? 'inactive' : 'reserve'}`}>
+                          {isActive ? 'Active' : supplier.isActive ? 'Offline' : 'Reserve'}
                         </span>
                       </div>
                       <small className="muted">{supplier.location}</small>

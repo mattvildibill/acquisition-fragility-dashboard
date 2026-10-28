@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { dataset } from './data';
 import type { SupplierActiveMap } from './data/types';
 import { FullModelSection } from './components/FullModelSection';
+import { RecoveryWorkspace } from './components/RecoveryWorkspace';
 import { Header } from './components/Header';
 import { ProgramTabs } from './components/ProgramTabs';
 import { SupplierPanel } from './components/SupplierPanel';
@@ -93,12 +94,15 @@ export default function App(): JSX.Element {
             selectedProgramId={selectedProgramId}
             onSelectProgram={setSelectedProgramId}
           />
+          <RecoveryWorkspace data={dataset} supplierActiveMap={supplierActiveMap} programId={selectedProgramId} onSelectProgram={setSelectedProgramId} />
+          <details className="program-evidence" open><summary>Selected program score &amp; component evidence</summary>
           <ProgramDetailPage
             selectedProgramId={selectedProgramId}
             data={dataset}
             supplierActiveMap={supplierActiveMap}
             baselineScore={baselineProgramScore}
           />
+          </details>
         </section>
       </div>
 

@@ -16,7 +16,7 @@ export function SupplierPanel({ suppliers, supplierActiveMap, onToggleSupplier }
 
   return (
     <section className="card supplier-panel">
-      <h2>1. Set a supplier scenario</h2>
+      <h2>1. Disrupt a supplier</h2>
       <p className="muted">Take a producer offline, then inspect the program impact. Activating a reserve assumes its qualification is complete.</p>
       <div className="supplier-list" tabIndex={0} role="region" aria-label="Supplier scenario controls">
         {ordered.map((supplier) => {
@@ -34,7 +34,7 @@ export function SupplierPanel({ suppliers, supplierActiveMap, onToggleSupplier }
                 ) : null}
               </div>
               <div className="supplier-actions">
-                <span className={`status-pill ${status ? 'active' : 'inactive'}`}>{status ? 'Active' : 'Inactive'}</span>
+                <span className={`status-pill ${status ? 'active' : supplier.isActive ? 'inactive' : 'reserve'}`}>{status ? 'Active' : supplier.isActive ? 'Offline' : 'Reserve'}</span>
                 <button
                   type="button"
                   aria-label={`${status ? 'Deactivate' : 'Activate'} ${supplier.name}`}

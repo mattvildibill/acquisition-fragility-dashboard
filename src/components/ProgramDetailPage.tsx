@@ -27,7 +27,7 @@ export function ProgramDetailPage({
 
   return (
     <section className="card impact-panel">
-      <h2>2. Inspect the impact <span className="muted">/ {selectedProgram.name}</span></h2>
+      <h2>Component evidence <span className="muted">/ {selectedProgram.name}</span></h2>
       <div className="score-strip">
         <div className="score-tile score-tile-primary">
           <span className="score-label">Illustrative health score</span>

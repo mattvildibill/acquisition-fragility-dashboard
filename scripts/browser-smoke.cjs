@@ -15,6 +15,23 @@ const baseUrl = process.env.BASE_URL || 'http://127.0.0.1:4180/';
  await page.getByRole('button',{name:/Aegis Communications Node/}).first().click();
  assert.equal(await page.locator('.score-value').innerText(),'55');
  assert.match(await page.locator('.restore-banner').innerText(),/64 wks/);
+ assert.deepEqual(await page.locator('.comparison-score').allTextContents(), ['71','55','71','84']);
+ assert.match(await page.locator('.residual-note').innerText(), /Secure RF Modem/);
+ assert.match(await page.locator('.path-list').innerText(), /Cobalt Dynamics.*Secure RF Modem.*Aegis Communications Node.*Falcon Precision Munition/s);
+ assert.match(await page.locator('.comparison-horizon').innerText(), /after qualification completes.*Synthetic weeks/s);
+ await page.getByText('Qualification assumptions & calculation evidence',{exact:true}).click();
+ assert.match(await page.locator('.comparison-evidence').innerText(), /Composite Airframe Panel: 10 weeks/);
+ for(const width of [320,390,768,1024,1440]) {
+  await page.setViewportSize({width,height:900});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),width);
+ }
+ await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
+ const disruptedA11y=await page.evaluate(async()=>await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}));
+ assert.deepEqual(disruptedA11y.violations.map(v=>v.id),[]);
+ await page.getByRole('button',{name:'Falcon Precision Munition',exact:true}).focus();
+ await page.keyboard.press('Enter');
+ assert.match(await page.locator('.comparison-panel h2').innerText(), /Falcon/);
+ await page.getByRole('button',{name:'Aegis Communications Node',exact:true}).click();
  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('denied')}}}));
  await page.getByRole('button',{name:'Copy link to this scenario'}).click();
  const link=await page.getByRole('textbox',{name:'Scenario link'}).inputValue();
