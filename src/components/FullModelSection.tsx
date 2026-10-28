@@ -23,7 +23,7 @@ export function FullModelSection({
   adversaryLinkedSoleSources
 }: FullModelSectionProps): JSX.Element {
   return (
-    <details className="full-model" open>
+    <details className="full-model">
       <summary className="full-model-summary">
         <span className="full-model-summary-text">
           <span className="full-model-eyebrow">Full model</span>

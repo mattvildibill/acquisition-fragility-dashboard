@@ -1,6 +1,8 @@
 # Acquisition Fragility Dashboard
 
-**[Live demo →](https://mattvildibill.github.io/acquisition-fragility-dashboard/)**
+**[Live demo →](https://acquisition.mattvildibill.com)**
+
+[Legacy GitHub Pages demo](https://mattvildibill.github.io/acquisition-fragility-dashboard/) remains supported.
 
 A small tool for one question: **if a supplier goes down, which programs stop, and how long are they stopped for?**
 
@@ -20,10 +22,16 @@ The 30-second version, using the seeded demo data:
 1. **Baseline.** Portfolio health sits at 72 and none of the three program tabs show a red at-risk dot.
 2. **Deactivate Cobalt Dynamics** in the supplier list on the left — it's the sole source for the Secure RF Modem, and it's tagged adversary-linked.
 3. Two tabs pick up a red dot: Aegis Communications Node 71 → 55, Falcon Precision Munition 65 → 52. The Secure RF Modem now has no active supplier at all.
-4. **Click the Aegis tab.** The restore banner reads **64 weeks** — the only qualified alternate on file is a Norwegian supplier, and that's the qualification lead time.
-5. Scroll to **"Dependency graph & supplier rankings"** for the dependency map, supplier ranking table, and ownership-exposure callout. This section starts expanded and can be collapsed.
+4. **Click Aegis in the affected dependency path.** Compare baseline 71, disrupted 55, choice A 71 and choice B 84 in one ledger.
+5. **Read the tradeoff.** A qualifies Halden to close the modem gap. B also qualifies Meridian for power-module redundancy. Both have a synthetic 64-week qualification envelope, but the modem remains single-sourced in both. Open calculation evidence for every qualification link.
 
-A vendor risk list would have shown Cobalt Dynamics at 58/100 and stopped there. The 64 weeks is the number that actually changes what you do about it.
+## Case study: recovery without false precision
+
+The centerpiece follows a lost producer through component dependencies into programs, then compares two explicit policies. **A closes current gaps; B also seeks redundancy for fragile components.** Neither is an optimizer or a recommendation to buy. Choices are read-only previews and preserve the current scenario and the existing score calculations.
+
+Selection uses component ID order, then the shortest per-part reserve qualification with supplier-ID tie-breaking. Offline baseline producers are excluded. The existing model activates suppliers across every linked part, so the qualification envelope includes all those parts, even outside the selected program. All qualifications run in parallel with unlimited capacity. Scores show the state after that work completes, not a predicted state today. Unmet goals stay visible rather than receiving a fabricated recovery path.
+
+The visual hierarchy puts affected paths and a shared baseline/current/choice ledger first. Detailed scores, rankings and assumptions remain inspectable. Reserve suppliers are distinguished from producers taken offline. No cost data, real dates, backend, exports or saved scenario library were introduced.
 
 ## What it models
 
@@ -89,7 +97,7 @@ The scoring engine is deliberately isolated in `src/lib/scoring.ts` with the dat
 npm test
 ```
 
-37 tests over the scoring engine and the share-link encoding. A few run against the demo dataset specifically to keep the walkthrough above honest — if I change a supplier and the numbers in this README go stale, those fail.
+46 tests over the scoring engine, recovery comparison and share-link encoding. A few run against the demo dataset specifically to keep the walkthrough above honest — if I change a supplier and the numbers in this README go stale, those fail.
 
 Writing them turned up two real bugs: a supplier knocked offline by a scenario was being recommended as its own replacement, and the "top critical supplier" callout could name a different vendor than the top row of the table right below it. Both are fixed; both have tests.
 
